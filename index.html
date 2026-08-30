@@ -189,6 +189,9 @@ h1,h2,h3,h4{ font-family:"Lexend", "IBM Plex Sans", sans-serif; text-wrap:balanc
 .mc-score .mc-emoji{ font-size:18px; }
 .mc-score .mc-num{ font-family:"IBM Plex Mono",monospace; font-weight:700; font-size:15px; }
 .mc-badge-row{ margin:6px 0 10px; }
+.mc-sub{ font-size:12px; color:var(--text-muted); margin:2px 0 10px; }
+.mc-name.clickable{ cursor:pointer; color:var(--accent); text-decoration:underline; text-decoration-color:transparent; }
+.mc-name.clickable:hover{ text-decoration-color:var(--accent); }
 .mc-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px 16px; }
 .mc-item{ display:flex; align-items:center; justify-content:space-between; font-size:12.5px; }
 .mc-item .mc-label{ color:var(--text-muted); }
@@ -425,7 +428,8 @@ footer strong{ color:var(--text-muted); }
     <div class="tablewrap" id="resumenTableWrap"><table id="t-resumen"></table></div>
   </div>
   <div class="panel" id="p-detalle">
-    <div class="tablewrap"><table id="t-detalle"></table></div>
+    <div id="detalleCards" hidden></div>
+    <div class="tablewrap" id="detalleTableWrap"><table id="t-detalle"></table></div>
   </div>
 
   <div class="panel" id="p-freq">
@@ -907,7 +911,7 @@ function renderResumenCards(rows){
     const cls = clsMap[r.res] || 'seguimiento';
     return `<div class="mc-card mc-${cls}">
       <div class="mc-head">
-        <div class="mc-name">${esc(titleCase(r.n))}</div>
+        <div class="mc-name clickable" data-dni="${esc(r.d)}">${esc(titleCase(r.n))} ›</div>
         <div class="mc-score"><span class="mc-emoji">${resultEmoji(r.res)}</span><span class="mc-num">${r.dsm}</span></div>
       </div>
       <div class="mc-badge-row">${resultBadgeHTML(r.res)}</div>
@@ -923,6 +927,18 @@ function renderResumenCards(rows){
       </div>
     </div>`;
   }).join('');
+  wrap.querySelectorAll('.mc-name.clickable').forEach(el=>{
+    el.addEventListener('click', ()=>goToMercaderistaDetail(el.dataset.dni));
+  });
+}
+
+function goToMercaderistaDetail(dni){
+  state.mercaderista = dni;
+  refreshDropdowns();
+  render();
+  const tabBtn = document.querySelector('.tab[data-panel="p-detalle"]');
+  if(tabBtn) tabBtn.click();
+  window.scrollTo({top:0, behavior:'smooth'});
 }
 
 function renderResumen(){
@@ -992,11 +1008,41 @@ function countCellHTML(v){
   return `<span class="dot ${cls}" title="${v} vez(es) en el mes">${v}</span>`;
 }
 
+function renderDetalleCards(rows){
+  const wrap = document.getElementById('detalleCards');
+  if(rows.length===0){ wrap.innerHTML = `<div class="empty">Sin resultados para estos filtros.</div>`; return; }
+  wrap.innerHTML = rows.map(d=>{
+    const cls = d.t===0 ? 'critico' : (d.t>=3 ? 'excelente' : 'seguimiento');
+    return `<div class="mc-card mc-${cls}">
+      <div class="mc-head">
+        <div class="mc-name">${esc(titleCase(d.pdv))}</div>
+        <div class="mc-score"><span class="mc-num">${d.t}/5</span></div>
+      </div>
+      <div class="mc-sub">${esc(titleCase(d.c))} · ${esc(titleCase(d.mk))} · ${d.dp} días programados</div>
+      <div class="mc-grid">
+        <div class="mc-item"><span class="mc-label">Precios</span><span class="mc-value">${d.kp}x</span></div>
+        <div class="mc-item"><span class="mc-label">Acciones</span><span class="mc-value">${d.ka}x</span></div>
+        <div class="mc-item"><span class="mc-label">Stock</span><span class="mc-value">${d.kst}x</span></div>
+        <div class="mc-item"><span class="mc-label">SOP</span><span class="mc-value">${d.ksop}x</span></div>
+        <div class="mc-item"><span class="mc-label">SOS</span><span class="mc-value">${d.ksos}x</span></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 function renderDetalle(){
   const rows = sortRows(filteredDetalle(), state.sortDetalle[0], state.sortDetalle[1]);
+  const isAdmin = CURRENT_PROFILE && CURRENT_PROFILE.role === 'admin';
+  document.getElementById('detalleCards').hidden = isAdmin;
+  document.getElementById('detalleTableWrap').hidden = !isAdmin;
+
+  if(!isAdmin){
+    renderDetalleCards(rows);
+    return;
+  }
+
   const t = document.getElementById('t-detalle');
   if(rows.length===0){ t.innerHTML = `<tbody><tr><td class="empty">Sin resultados para estos filtros.</td></tr></tbody>`; return; }
-  const isAdmin = CURRENT_PROFILE && CURRENT_PROFILE.role === 'admin';
   const head = `<thead><tr>
     ${headerCell('Mercaderista','n',state.sortDetalle)}
     ${isAdmin ? headerCell('Región','r',state.sortDetalle) : ''}
