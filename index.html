@@ -1,4 +1,5 @@
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Medición de Relevo Mercaderismo</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -331,8 +332,12 @@ footer strong{ color:var(--text-muted); }
             style="width:100%; margin-top:4px; font:inherit; font-size:14px; background:var(--surface-2); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:10px 12px;">
         </label>
         <label style="font-size:12px; color:var(--text-muted); font-weight:600;">Contraseña
-          <input type="password" id="loginPass" autocomplete="current-password" required
-            style="width:100%; margin-top:4px; font:inherit; font-size:14px; background:var(--surface-2); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:10px 12px;">
+          <div style="position:relative; margin-top:4px;">
+            <input type="password" id="loginPass" autocomplete="current-password" required
+              style="width:100%; font:inherit; font-size:14px; background:var(--surface-2); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:10px 40px 10px 12px;">
+            <button type="button" id="btnTogglePass" aria-label="Mostrar contraseña"
+              style="position:absolute; right:4px; top:50%; transform:translateY(-50%); width:32px; height:32px; border:none; background:transparent; cursor:pointer; color:var(--text-faint); font-size:16px; display:flex; align-items:center; justify-content:center;">👁</button>
+          </div>
         </label>
         <button type="submit" id="btnLogin" class="access-admin-btn" style="background:var(--accent); color:#fff; border-color:var(--accent); padding:11px 14px; font-size:14px;">Entrar</button>
         <div id="loginError" style="color:var(--critical); font-size:12.5px; min-height:16px;"></div>
@@ -1552,6 +1557,15 @@ async function loadProfileAndData(){
   refreshDropdowns();
   render();
 }
+
+document.getElementById('btnTogglePass').addEventListener('click', ()=>{
+  const inp = document.getElementById('loginPass');
+  const btn = document.getElementById('btnTogglePass');
+  const show = inp.type === 'password';
+  inp.type = show ? 'text' : 'password';
+  btn.textContent = show ? '🙈' : '👁';
+  btn.setAttribute('aria-label', show ? 'Ocultar contraseña' : 'Mostrar contraseña');
+});
 
 document.getElementById('loginForm').addEventListener('submit', async (e)=>{
   console.log('[login] submit disparado');
