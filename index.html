@@ -197,6 +197,11 @@ tbody tr:last-child td{ border-bottom:none; }
 tbody tr:hover{ background:var(--surface-2); }
 td.name{ font-weight:500; white-space:nowrap; }
 td.code{ font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--text-muted); text-align:center; }
+/* columnas fijas al hacer scroll horizontal (tabla de Resumen en vista supervisor) */
+.sticky-col{ position:sticky; left:0; background:var(--surface); z-index:2; box-shadow:1px 0 0 var(--border); }
+.sticky-col:first-child{ width:34px; min-width:34px; max-width:34px; text-align:center; }
+.sticky-col-2{ left:34px; min-width:150px; }
+thead .sticky-col{ background:var(--surface-2); z-index:3; }
 td:has(> .meter), td:has(> .dot), td:has(> .chip-total), td:has(> .chip-freq),
 td:has(> .badge), td:has(> .alert-badge), td:has(> .warn-badge), td:has(> .ok-badge), td:has(> .result-badge) {
   text-align:center;
@@ -474,7 +479,7 @@ footer strong{ color:var(--text-muted); }
   </div>
 
   <div class="panel" id="p-eval">
-    <div class="wa-panel">
+    <div class="wa-panel" id="waPanel">
       <div class="wa-head">
         <h4>Texto preliminar para WhatsApp</h4>
         <p>Usa los filtros de Región / Supervisor de arriba para acotar, luego copia el texto y la captura de la tabla.</p>
@@ -811,28 +816,35 @@ function renderResumenInsights(){
   const rows = filteredResumen();
   const el = document.getElementById('resumenInsights');
   if(rows.length===0){ el.innerHTML = ''; return; }
+  const isAdmin = CURRENT_PROFILE && CURRENT_PROFILE.role === 'admin';
 
-  const sorted = [...rows].sort((a,b)=>b.dsm-a.dsm);
-  const top5 = sorted.slice(0,5);
-  const bottom5 = sorted.slice(-5).reverse();
-  const rankRow = (r,i)=>`<div class="rank-row">
-      <span class="rname" title="${esc(titleCase(r.n))}">${i+1}. ${esc(titleCase(r.n))}</span>
-      <span class="rpct" style="color:var(--${statusFor(r.dsm)})">${r.dsm}%</span>
-    </div>`;
-  const rankingHTML = `
-    <div class="insight-card">
-      <h4>Ranking de desempeño</h4>
-      <div class="rank-cols">
-        <div>
-          <div class="rank-subhead">Top 5</div>
-          <div class="rank-list">${top5.map((r,i)=>rankRow(r,i)).join('') || '<span class="rank-row">—</span>'}</div>
+  // El ranking Top5/A-reforzar solo tiene sentido con equipos grandes (vista admin);
+  // con 5 mercaderistas o menos (equipo típico de un supervisor) ambas listas
+  // terminan mostrando a las mismas personas, así que se omite para supervisores.
+  let rankingHTML = '';
+  if(isAdmin){
+    const sorted = [...rows].sort((a,b)=>b.dsm-a.dsm);
+    const top5 = sorted.slice(0,5);
+    const bottom5 = sorted.slice(-5).reverse();
+    const rankRow = (r,i)=>`<div class="rank-row">
+        <span class="rname" title="${esc(titleCase(r.n))}">${i+1}. ${esc(titleCase(r.n))}</span>
+        <span class="rpct" style="color:var(--${statusFor(r.dsm)})">${r.dsm}%</span>
+      </div>`;
+    rankingHTML = `
+      <div class="insight-card">
+        <h4>Ranking de desempeño</h4>
+        <div class="rank-cols">
+          <div>
+            <div class="rank-subhead">Top 5</div>
+            <div class="rank-list">${top5.map((r,i)=>rankRow(r,i)).join('') || '<span class="rank-row">—</span>'}</div>
+          </div>
+          <div>
+            <div class="rank-subhead">A reforzar</div>
+            <div class="rank-list">${bottom5.map((r,i)=>rankRow(r,i)).join('') || '<span class="rank-row">—</span>'}</div>
+          </div>
         </div>
-        <div>
-          <div class="rank-subhead">A reforzar</div>
-          <div class="rank-list">${bottom5.map((r,i)=>rankRow(r,i)).join('') || '<span class="rank-row">—</span>'}</div>
-        </div>
-      </div>
-    </div>`;
+      </div>`;
+  }
 
   const kpiDefs = [['Precios','kp'],['Acciones','ka'],['Stock','kst'],['SOP','ksop'],['SOS','ksos']];
   const gaps = kpiDefs.map(([label,key])=>{
@@ -875,20 +887,38 @@ function renderResumen(){
   const isAdmin = CURRENT_PROFILE && CURRENT_PROFILE.role === 'admin';
 
   if(!isAdmin){
-    // Vista simplificada para supervisores (pensada para celular): solo lo esencial.
+    // Vista para supervisores (pensada para celular): sin DNI/Actividad/Región/Zona/
+    // Supervisor (ya son fijos para su equipo), pero con el detalle completo de cada
+    // indicador. La columna Mercaderista queda fija (sticky) al desplazar horizontal.
+    const nameActive = state.sortResumen[0]==='n';
+    const nameArrow = nameActive ? (state.sortResumen[1]===1?'▲':'▼') : '';
     const head = `<thead><tr>
-      <th>#</th>
-      ${headerCell('Mercaderista','n',state.sortResumen)}
+      <th class="sticky-col">#</th>
+      <th class="sticky-col sticky-col-2" data-key="n">Mercaderista<span class="arrow">${nameArrow}</span></th>
+      ${headerCell('Ciudad','c',state.sortResumen)}
       ${headerCell('PDV prog.','p',state.sortResumen)}
-      <th>Relevo</th>
-      ${headerCell('Desempeño','dsm',state.sortResumen)}
-      ${headerCell('Estado','res',state.sortResumen)}
+      ${headerCell('Asistencia','asis',state.sortResumen)}
+      ${headerCell('Cobertura','cob',state.sortResumen)}
+      ${headerCell('Precios','kp',state.sortResumen)}
+      ${headerCell('Acciones','ka',state.sortResumen)}
+      ${headerCell('Stock','kst',state.sortResumen)}
+      ${headerCell('SOP','ksop',state.sortResumen)}
+      ${headerCell('SOS','ksos',state.sortResumen)}
+      ${headerCell('Promedio','dsm',state.sortResumen)}
+      ${headerCell('Resultado','res',state.sortResumen)}
     </tr></thead>`;
     const body = rows.map((r,i)=>`<tr>
-      <td class="num">${i+1}</td>
-      <td class="name">${esc(titleCase(r.n))}</td>
+      <td class="num sticky-col">${i+1}</td>
+      <td class="name sticky-col sticky-col-2">${esc(titleCase(r.n))}</td>
+      <td>${esc(titleCase(r.c))}</td>
       <td class="num">${r.p}</td>
-      <td><span class="pct ${statusFor(relevoPct(r))}" style="font-weight:600">${relevoPct(r)}%</span></td>
+      <td>${meterHTML(r.asis[0], r.asis[1], r.asis[2])}</td>
+      <td>${meterHTML(r.cob[0], r.cob[1], r.cob[2])}</td>
+      <td>${meterHTML(r.kp[0], r.p, r.kp[1])}</td>
+      <td>${meterHTML(r.ka[0], r.p, r.ka[1])}</td>
+      <td>${meterHTML(r.kst[0], r.p, r.kst[1])}</td>
+      <td>${meterHTML(r.ksop[0], r.p, r.ksop[1])}</td>
+      <td>${meterHTML(r.ksos[0], r.p, r.ksos[1])}</td>
       <td><span class="pct ${statusFor(r.dsm)}" style="font-weight:600">${r.dsm}%</span></td>
       <td>${resultBadgeHTML(r.res)}</td>
     </tr>`).join('');
@@ -964,7 +994,7 @@ function renderDetalle(){
     ${headerCell('Ciudad','c',state.sortDetalle)}
     ${headerCell('Mercado','mk',state.sortDetalle)}
     ${isAdmin ? headerCell('Distribuidora','dist',state.sortDetalle) : ''}
-    ${headerCell('COD Local','cl',state.sortDetalle)}
+    ${isAdmin ? headerCell('COD Local','cl',state.sortDetalle) : ''}
     ${headerCell('PDV','pdv',state.sortDetalle)}
     ${headerCell('Días prog.','dp',state.sortDetalle)}
     ${headerCell('Precios','kp',state.sortDetalle)}
@@ -982,7 +1012,7 @@ function renderDetalle(){
     <td>${esc(titleCase(d.c))}</td>
     <td>${esc(titleCase(d.mk))}</td>
     ${isAdmin ? `<td>${esc(titleCase(d.dist))}</td>` : ''}
-    <td class="code">${esc(d.cl)}</td>
+    ${isAdmin ? `<td class="code">${esc(d.cl)}</td>` : ''}
     <td class="name">${esc(titleCase(d.pdv))}</td>
     <td class="num">${d.dp}</td>
     <td>${countCellHTML(d.kp)}</td>
@@ -1010,9 +1040,10 @@ function renderFreq(){
   const rows = sortRows(filteredFreq(), state.sortFreq[0], state.sortFreq[1]);
   const t = document.getElementById('t-freq');
   if(rows.length===0){ t.innerHTML = `<tbody><tr><td class="empty">Sin resultados para estos filtros.</td></tr></tbody>`; return; }
+  const isAdmin = CURRENT_PROFILE && CURRENT_PROFILE.role === 'admin';
   const head = `<thead><tr>
     ${headerCell('Mercaderista','n',state.sortFreq)}
-    ${headerCell('Región','r',state.sortFreq)}
+    ${isAdmin ? headerCell('Región','r',state.sortFreq) : ''}
     ${headerCell('Ciudad','c',state.sortFreq)}
     ${headerCell('Mercado','mk',state.sortFreq)}
     ${headerCell('PDV','pdv',state.sortFreq)}
@@ -1025,7 +1056,7 @@ function renderFreq(){
   </tr></thead>`;
   const body = rows.map(r=>`<tr>
     <td class="name">${esc(titleCase(r.n))}</td>
-    <td>${esc(titleCase(r.r))}</td>
+    ${isAdmin ? `<td>${esc(titleCase(r.r))}</td>` : ''}
     <td>${esc(titleCase(r.c))}</td>
     <td>${esc(titleCase(r.mk))}</td>
     <td class="name">${esc(titleCase(r.pdv))}</td>
@@ -1119,6 +1150,7 @@ function renderPrecios(){
   const rowsAll = filteredPreciosProd();
   const t = document.getElementById('t-precios');
   if(rowsAll.length===0){ t.innerHTML = `<tbody><tr><td class="empty">Sin resultados para este filtro.</td></tr></tbody>`; return; }
+  const isAdmin = CURRENT_PROFILE && CURRENT_PROFILE.role === 'admin';
 
   // group by mercado (+ distribuidora, in case of name collisions)
   const groups = new Map();
@@ -1161,7 +1193,7 @@ function renderPrecios(){
     g.items.sort((a,b)=>a.pdv.localeCompare(b.pdv,'es')).forEach(r=>{
       body += `<tr class="pdv-row ${isOpen?'show':''}" data-parent="${gid}">
         <td></td>
-        <td class="pdv-name">${esc(titleCase(r.pdv))} <span class="code" style="font-size:11px">${esc(r.cl)}</span></td>
+        <td class="pdv-name">${esc(titleCase(r.pdv))} ${isAdmin ? `<span class="code" style="font-size:11px">${esc(r.cl)}</span>` : ''}</td>
         <td></td>
         <td></td>
         <td>${meterHTML(r.sfC, r.sfO, r.sfPct)}</td>
@@ -1192,9 +1224,10 @@ function renderAcciones(){
   const rows = sortRows(rows0, state.sortAcciones[0], state.sortAcciones[1]);
   const t = document.getElementById('t-acciones');
   if(rows.length===0){ t.innerHTML = `<tbody><tr><td class="empty">Sin resultados para estos filtros.</td></tr></tbody>`; return; }
+  const isAdmin = CURRENT_PROFILE && CURRENT_PROFILE.role === 'admin';
   const head = `<thead><tr>
     ${headerCell('Mercaderista','n',state.sortAcciones)}
-    ${headerCell('Región','r',state.sortAcciones)}
+    ${isAdmin ? headerCell('Región','r',state.sortAcciones) : ''}
     ${headerCell('Ciudad','c',state.sortAcciones)}
     ${headerCell('Mercado','mk',state.sortAcciones)}
     ${headerCell('PDV','pdv',state.sortAcciones)}
@@ -1203,7 +1236,7 @@ function renderAcciones(){
   </tr></thead>`;
   const body = rows.map(r=>`<tr>
     <td class="name">${esc(titleCase(r.n))}</td>
-    <td>${esc(titleCase(r.r))}</td>
+    ${isAdmin ? `<td>${esc(titleCase(r.r))}</td>` : ''}
     <td>${esc(titleCase(r.c))}</td>
     <td>${esc(titleCase(r.mk))}</td>
     <td class="name">${esc(titleCase(r.pdv))}</td>
@@ -1224,9 +1257,10 @@ function renderSos(){
 
   const t = document.getElementById('t-sos');
   if(rows.length===0){ t.innerHTML = `<tbody><tr><td class="empty">Sin resultados para estos filtros.</td></tr></tbody>`; return; }
+  const isAdmin = CURRENT_PROFILE && CURRENT_PROFILE.role === 'admin';
   const head = `<thead><tr>
     ${headerCell('Supervisor','s',state.sortSos)}
-    ${headerCell('Región','r',state.sortSos)}
+    ${isAdmin ? headerCell('Región','r',state.sortSos) : ''}
     ${headerCell('Departamento','dep',state.sortSos)}
     ${headerCell('PDV objetivo','obj',state.sortSos)}
     ${headerCell('PDV relevado por supervisor','cum',state.sortSos)}
@@ -1237,7 +1271,7 @@ function renderSos(){
   </tr></thead>`;
   const body = rows.map(r=>`<tr>
     <td class="name">${esc(titleCase(r.s))}</td>
-    <td>${esc(titleCase(r.r))}</td>
+    ${isAdmin ? `<td>${esc(titleCase(r.r))}</td>` : ''}
     <td>${esc(titleCase(r.dep))}</td>
     <td class="num">${r.obj}</td>
     <td class="num">${r.cum}</td>
@@ -1258,9 +1292,10 @@ function renderSosDetail(){
   const rows = sortRows(filteredSosDetail(), state.sortSosDetail[0], state.sortSosDetail[1]);
   const t = document.getElementById('t-sos-detail');
   if(rows.length===0){ t.innerHTML = `<tbody><tr><td class="empty">Sin resultados para estos filtros.</td></tr></tbody>`; return; }
+  const isAdmin = CURRENT_PROFILE && CURRENT_PROFILE.role === 'admin';
   const head = `<thead><tr>
     ${headerCell('Supervisor','s',state.sortSosDetail)}
-    ${headerCell('Región','r',state.sortSosDetail)}
+    ${isAdmin ? headerCell('Región','r',state.sortSosDetail) : ''}
     ${headerCell('Ciudad','c',state.sortSosDetail)}
     ${headerCell('Mercado','mk',state.sortSosDetail)}
     ${headerCell('PDV','pdv',state.sortSosDetail)}
@@ -1268,7 +1303,7 @@ function renderSosDetail(){
   </tr></thead>`;
   const body = rows.map(r=>`<tr>
     <td class="name">${esc(titleCase(r.s))}</td>
-    <td>${esc(titleCase(r.r))}</td>
+    ${isAdmin ? `<td>${esc(titleCase(r.r))}</td>` : ''}
     <td>${esc(titleCase(r.c))}</td>
     <td>${esc(titleCase(r.mk))}</td>
     <td class="name">${esc(titleCase(r.pdv))}</td>
@@ -1286,11 +1321,12 @@ function renderEval(){
   const rows = sortRows(filteredEval(), state.sortEval[0], state.sortEval[1]);
   const t = document.getElementById('t-eval');
   if(rows.length===0){ t.innerHTML = `<tbody><tr><td class="empty">Sin resultados para estos filtros.</td></tr></tbody>`; return; }
+  const isAdmin = CURRENT_PROFILE && CURRENT_PROFILE.role === 'admin';
   const head = `<thead><tr>
     ${headerCell('DNI','dni',state.sortEval)}
     ${headerCell('Mercaderista','n',state.sortEval)}
-    ${headerCell('Actividad','a',state.sortEval)}
-    ${headerCell('Región','r',state.sortEval)}
+    ${isAdmin ? headerCell('Actividad','a',state.sortEval) : ''}
+    ${isAdmin ? headerCell('Región','r',state.sortEval) : ''}
     ${headerCell('Ciudad','c',state.sortEval)}
     ${headerCell('N° evaluaciones','ne',state.sortEval)}
     ${headerCell('Estado','ne',state.sortEval)}
@@ -1298,8 +1334,8 @@ function renderEval(){
   const body = rows.map(e=>`<tr>
     <td class="code">${esc(e.dni)}</td>
     <td class="name">${esc(titleCase(e.n))}</td>
-    <td>${activityBadge(e.a)}</td>
-    <td>${esc(titleCase(e.r))}</td>
+    ${isAdmin ? `<td>${activityBadge(e.a)}</td>` : ''}
+    ${isAdmin ? `<td>${esc(titleCase(e.r))}</td>` : ''}
     <td>${esc(titleCase(e.c))}</td>
     <td class="num">${e.ne}</td>
     <td>${e.ne===0 ? '<span class="alert-badge">⚠ Falta evaluar</span>' : `<span class="ok-badge">✓ Evaluado</span>`}</td>
@@ -1574,6 +1610,7 @@ async function loadProfileAndData(){
   document.getElementById('fZona').hidden = state.lockedSupervisor;
   document.getElementById('preciosRollupSection').hidden = !isAdmin;
   document.getElementById('accionesRollupSection').hidden = !isAdmin;
+  document.getElementById('waPanel').hidden = !isAdmin;
 
   const meta = DATA.meta;
   if(meta && meta.mes_label){
