@@ -350,7 +350,6 @@ footer strong{ color:var(--text-muted); }
     <div>
       <div class="eyebrow">San Fernando · Canal Mayorista</div>
       <h1>Medición de Relevo Mercaderismo</h1>
-      <p>Cruce del planning (personal activo, actividad Mercaderismo / Mercaderismo Senior) contra los relevos de campo registrados en la BD KPI: Precios, Acciones, Stock, Share of People (SOP) y Share of Shelf (SOS).</p>
       <div class="session-box">
         <span>Viendo como: <span class="who" id="sessionWho"></span></span>
         <button type="button" id="btnChangeUser">Cerrar sesión</button>
@@ -488,11 +487,6 @@ footer strong{ color:var(--text-muted); }
     </div>
     <div class="tablewrap"><table id="t-eval"></table></div>
   </div>
-
-  <footer>
-    Fuente: <strong>Planning</strong> — FORMATO DE ASISTENCIA - TRADICIONAL MERCADERISMO.xlsx (hoja ASISTENCIA GENERAL), cruzado por Código GUTRADE ↔ Persona de interés y COD_LOCAL ↔ Punto de interés con <strong>BD KPI</strong> (Precios Nuevos Mayorista, Tarea Mayorista - Acciones/SOP/SOS/Stock/Evaluación). El personal activo se determina por su ÚLTIMO registro con estado confirmado en toda la base (no solo dentro de agosto): si hoy figura en otra actividad, ya no cuenta como Mercaderismo/Senior. Incluye además, por pedido explícito, a MATOS GOMEZ CARMEN TRUDI (Impulso Refuerzo) como única persona de Impulso considerada en este reporte. En Evaluación, cuando el DNI no cruza directo se reintenta por similitud de nombre contra el planning. % Asistencia = días con ASISTENCIA / días hábiles (excluye DESCANSO y días con status aún sin confirmar). % Cobertura = de las visitas a PDV programadas, cuántas se cumplieron realmente. El filtro "Relevo" aísla, en cada pestaña, lo que ya se completó de lo que sigue pendiente, para poder enviar solo el detalle faltante.
-    <div id="ownerNote" style="margin-top:6px"></div>
-  </footer>
   </div>
 </div>
 
@@ -870,10 +864,44 @@ function renderResumenInsights(){
   el.innerHTML = rankingHTML + gapsHTML + distHTML;
 }
 
+function relevoPct(r){
+  return Math.round((r.kp[1]+r.ka[1]+r.kst[1]+r.ksop[1]+r.ksos[1])/5*10)/10;
+}
+
 function renderResumen(){
   const rows = sortRows(filteredResumen(), state.sortResumen[0], state.sortResumen[1]);
   const t = document.getElementById('t-resumen');
   if(rows.length===0){ t.innerHTML = `<tbody><tr><td class="empty">Sin resultados para estos filtros.</td></tr></tbody>`; return; }
+  const isAdmin = CURRENT_PROFILE && CURRENT_PROFILE.role === 'admin';
+
+  if(!isAdmin){
+    // Vista simplificada para supervisores (pensada para celular): solo lo esencial.
+    const head = `<thead><tr>
+      <th>#</th>
+      ${headerCell('Mercaderista','n',state.sortResumen)}
+      ${headerCell('PDV prog.','p',state.sortResumen)}
+      <th>Relevo</th>
+      ${headerCell('Desempeño','dsm',state.sortResumen)}
+      ${headerCell('Estado','res',state.sortResumen)}
+    </tr></thead>`;
+    const body = rows.map((r,i)=>`<tr>
+      <td class="num">${i+1}</td>
+      <td class="name">${esc(titleCase(r.n))}</td>
+      <td class="num">${r.p}</td>
+      <td><span class="pct ${statusFor(relevoPct(r))}" style="font-weight:600">${relevoPct(r)}%</span></td>
+      <td><span class="pct ${statusFor(r.dsm)}" style="font-weight:600">${r.dsm}%</span></td>
+      <td>${resultBadgeHTML(r.res)}</td>
+    </tr>`).join('');
+    t.innerHTML = head + `<tbody>${body}</tbody>`;
+    t.querySelectorAll('thead th').forEach(th=>th.addEventListener('click', ()=>{
+      const key = th.dataset.key;
+      if(!key) return;
+      state.sortResumen = state.sortResumen[0]===key ? [key, -state.sortResumen[1]] : [key,-1];
+      renderResumen();
+    }));
+    return;
+  }
+
   const head = `<thead><tr>
     ${headerCell('Mercaderista','n',state.sortResumen)}
     ${headerCell('DNI','d',state.sortResumen)}
@@ -929,12 +957,13 @@ function renderDetalle(){
   const rows = sortRows(filteredDetalle(), state.sortDetalle[0], state.sortDetalle[1]);
   const t = document.getElementById('t-detalle');
   if(rows.length===0){ t.innerHTML = `<tbody><tr><td class="empty">Sin resultados para estos filtros.</td></tr></tbody>`; return; }
+  const isAdmin = CURRENT_PROFILE && CURRENT_PROFILE.role === 'admin';
   const head = `<thead><tr>
     ${headerCell('Mercaderista','n',state.sortDetalle)}
-    ${headerCell('Región','r',state.sortDetalle)}
+    ${isAdmin ? headerCell('Región','r',state.sortDetalle) : ''}
     ${headerCell('Ciudad','c',state.sortDetalle)}
     ${headerCell('Mercado','mk',state.sortDetalle)}
-    ${headerCell('Distribuidora','dist',state.sortDetalle)}
+    ${isAdmin ? headerCell('Distribuidora','dist',state.sortDetalle) : ''}
     ${headerCell('COD Local','cl',state.sortDetalle)}
     ${headerCell('PDV','pdv',state.sortDetalle)}
     ${headerCell('Días prog.','dp',state.sortDetalle)}
@@ -949,10 +978,10 @@ function renderDetalle(){
     const st = d.t===0?'critical':(d.t>=3?'good':'warn');
     return `<tr>
     <td class="name">${esc(titleCase(d.n))}</td>
-    <td>${esc(titleCase(d.r))}</td>
+    ${isAdmin ? `<td>${esc(titleCase(d.r))}</td>` : ''}
     <td>${esc(titleCase(d.c))}</td>
     <td>${esc(titleCase(d.mk))}</td>
-    <td>${esc(titleCase(d.dist))}</td>
+    ${isAdmin ? `<td>${esc(titleCase(d.dist))}</td>` : ''}
     <td class="code">${esc(d.cl)}</td>
     <td class="name">${esc(titleCase(d.pdv))}</td>
     <td class="num">${d.dp}</td>
