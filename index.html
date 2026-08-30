@@ -174,6 +174,26 @@ h1,h2,h3,h4{ font-family:"Lexend", "IBM Plex Sans", sans-serif; text-wrap:balanc
 .wa-panel .wa-status{ font-size:11.5px; color:var(--text-faint); }
 .wa-panel .wa-status.ok{ color:var(--good); }
 
+/* ---------- Tarjetas de mercaderista (vista supervisor, celular) ---------- */
+#resumenCards{ display:flex; flex-direction:column; gap:12px; }
+.mc-card{
+  background:var(--surface); border:1px solid var(--border); border-radius:12px;
+  padding:14px 16px; box-shadow:var(--shadow); border-left:5px solid var(--border);
+}
+.mc-card.mc-excelente, .mc-card.mc-bueno{ border-left-color:var(--good); }
+.mc-card.mc-seguimiento{ border-left-color:var(--warn); }
+.mc-card.mc-critico{ border-left-color:var(--critical); }
+.mc-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+.mc-name{ font-weight:600; font-size:14.5px; color:var(--text); }
+.mc-score{ display:flex; align-items:center; gap:6px; flex:none; white-space:nowrap; }
+.mc-score .mc-emoji{ font-size:18px; }
+.mc-score .mc-num{ font-family:"IBM Plex Mono",monospace; font-weight:700; font-size:15px; }
+.mc-badge-row{ margin:6px 0 10px; }
+.mc-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px 16px; }
+.mc-item{ display:flex; align-items:center; justify-content:space-between; font-size:12.5px; }
+.mc-item .mc-label{ color:var(--text-muted); }
+.mc-item .mc-value{ font-family:"IBM Plex Mono",monospace; font-weight:600; color:var(--text); }
+
 /* ---------- Result badge ---------- */
 .result-badge{ display:inline-flex; align-items:center; font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:99px; white-space:nowrap; }
 .result-badge.excelente{ background:var(--good-soft); color:var(--good); }
@@ -197,11 +217,6 @@ tbody tr:last-child td{ border-bottom:none; }
 tbody tr:hover{ background:var(--surface-2); }
 td.name{ font-weight:500; white-space:nowrap; }
 td.code{ font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--text-muted); text-align:center; }
-/* columnas fijas al hacer scroll horizontal (tabla de Resumen en vista supervisor) */
-.sticky-col{ position:sticky; left:0; background:var(--surface); z-index:2; box-shadow:1px 0 0 var(--border); }
-.sticky-col:first-child{ width:34px; min-width:34px; max-width:34px; text-align:center; }
-.sticky-col-2{ left:34px; min-width:150px; }
-thead .sticky-col{ background:var(--surface-2); z-index:3; }
 td:has(> .meter), td:has(> .dot), td:has(> .chip-total), td:has(> .chip-freq),
 td:has(> .badge), td:has(> .alert-badge), td:has(> .warn-badge), td:has(> .ok-badge), td:has(> .result-badge) {
   text-align:center;
@@ -406,7 +421,8 @@ footer strong{ color:var(--text-muted); }
 
   <div class="panel active" id="p-resumen">
     <div class="insights-grid" id="resumenInsights"></div>
-    <div class="tablewrap"><table id="t-resumen"></table></div>
+    <div id="resumenCards" hidden></div>
+    <div class="tablewrap" id="resumenTableWrap"><table id="t-resumen"></table></div>
   </div>
   <div class="panel" id="p-detalle">
     <div class="tablewrap"><table id="t-detalle"></table></div>
@@ -876,61 +892,54 @@ function renderResumenInsights(){
   el.innerHTML = rankingHTML + gapsHTML + distHTML;
 }
 
-function relevoPct(r){
-  return Math.round((r.kp[1]+r.ka[1]+r.kst[1]+r.ksop[1]+r.ksos[1])/5*10)/10;
+function resultEmoji(res){
+  if(res==='EXCELENTE') return '😄';
+  if(res==='BUENO') return '😊';
+  if(res==='SEGUIMIENTO') return '😐';
+  return '😟';
+}
+
+function renderResumenCards(rows){
+  const wrap = document.getElementById('resumenCards');
+  if(rows.length===0){ wrap.innerHTML = `<div class="empty">Sin resultados para estos filtros.</div>`; return; }
+  const clsMap = {EXCELENTE:'excelente', BUENO:'bueno', SEGUIMIENTO:'seguimiento', 'CRÍTICO':'critico'};
+  wrap.innerHTML = rows.map(r=>{
+    const cls = clsMap[r.res] || 'seguimiento';
+    return `<div class="mc-card mc-${cls}">
+      <div class="mc-head">
+        <div class="mc-name">${esc(titleCase(r.n))}</div>
+        <div class="mc-score"><span class="mc-emoji">${resultEmoji(r.res)}</span><span class="mc-num">${r.dsm}</span></div>
+      </div>
+      <div class="mc-badge-row">${resultBadgeHTML(r.res)}</div>
+      <div class="mc-grid">
+        <div class="mc-item"><span class="mc-label">PDV prog.</span><span class="mc-value">${r.p}</span></div>
+        <div class="mc-item"><span class="mc-label">Asistencia</span><span class="mc-value">${r.asis[2]}%</span></div>
+        <div class="mc-item"><span class="mc-label">Cobertura</span><span class="mc-value">${r.cob[2]}%</span></div>
+        <div class="mc-item"><span class="mc-label">Precios</span><span class="mc-value">${r.kp[1]}%</span></div>
+        <div class="mc-item"><span class="mc-label">Acciones</span><span class="mc-value">${r.ka[1]}%</span></div>
+        <div class="mc-item"><span class="mc-label">Stock</span><span class="mc-value">${r.kst[1]}%</span></div>
+        <div class="mc-item"><span class="mc-label">SOP</span><span class="mc-value">${r.ksop[1]}%</span></div>
+        <div class="mc-item"><span class="mc-label">SOS</span><span class="mc-value">${r.ksos[1]}%</span></div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function renderResumen(){
   const rows = sortRows(filteredResumen(), state.sortResumen[0], state.sortResumen[1]);
-  const t = document.getElementById('t-resumen');
-  if(rows.length===0){ t.innerHTML = `<tbody><tr><td class="empty">Sin resultados para estos filtros.</td></tr></tbody>`; return; }
   const isAdmin = CURRENT_PROFILE && CURRENT_PROFILE.role === 'admin';
+  document.getElementById('resumenCards').hidden = isAdmin;
+  document.getElementById('resumenTableWrap').hidden = !isAdmin;
 
   if(!isAdmin){
-    // Vista para supervisores (pensada para celular): sin DNI/Actividad/Región/Zona/
-    // Supervisor (ya son fijos para su equipo), pero con el detalle completo de cada
-    // indicador. La columna Mercaderista queda fija (sticky) al desplazar horizontal.
-    const nameActive = state.sortResumen[0]==='n';
-    const nameArrow = nameActive ? (state.sortResumen[1]===1?'▲':'▼') : '';
-    const head = `<thead><tr>
-      <th class="sticky-col">#</th>
-      <th class="sticky-col sticky-col-2" data-key="n">Mercaderista<span class="arrow">${nameArrow}</span></th>
-      ${headerCell('Ciudad','c',state.sortResumen)}
-      ${headerCell('PDV prog.','p',state.sortResumen)}
-      ${headerCell('Asistencia','asis',state.sortResumen)}
-      ${headerCell('Cobertura','cob',state.sortResumen)}
-      ${headerCell('Precios','kp',state.sortResumen)}
-      ${headerCell('Acciones','ka',state.sortResumen)}
-      ${headerCell('Stock','kst',state.sortResumen)}
-      ${headerCell('SOP','ksop',state.sortResumen)}
-      ${headerCell('SOS','ksos',state.sortResumen)}
-      ${headerCell('Promedio','dsm',state.sortResumen)}
-      ${headerCell('Resultado','res',state.sortResumen)}
-    </tr></thead>`;
-    const body = rows.map((r,i)=>`<tr>
-      <td class="num sticky-col">${i+1}</td>
-      <td class="name sticky-col sticky-col-2">${esc(titleCase(r.n))}</td>
-      <td>${esc(titleCase(r.c))}</td>
-      <td class="num">${r.p}</td>
-      <td>${meterHTML(r.asis[0], r.asis[1], r.asis[2])}</td>
-      <td>${meterHTML(r.cob[0], r.cob[1], r.cob[2])}</td>
-      <td>${meterHTML(r.kp[0], r.p, r.kp[1])}</td>
-      <td>${meterHTML(r.ka[0], r.p, r.ka[1])}</td>
-      <td>${meterHTML(r.kst[0], r.p, r.kst[1])}</td>
-      <td>${meterHTML(r.ksop[0], r.p, r.ksop[1])}</td>
-      <td>${meterHTML(r.ksos[0], r.p, r.ksos[1])}</td>
-      <td><span class="pct ${statusFor(r.dsm)}" style="font-weight:600">${r.dsm}%</span></td>
-      <td>${resultBadgeHTML(r.res)}</td>
-    </tr>`).join('');
-    t.innerHTML = head + `<tbody>${body}</tbody>`;
-    t.querySelectorAll('thead th').forEach(th=>th.addEventListener('click', ()=>{
-      const key = th.dataset.key;
-      if(!key) return;
-      state.sortResumen = state.sortResumen[0]===key ? [key, -state.sortResumen[1]] : [key,-1];
-      renderResumen();
-    }));
+    // Vista para supervisores (pensada para celular): tarjetas con el detalle
+    // completo de cada mercaderista, en vez de una tabla ancha con scroll.
+    renderResumenCards(rows);
     return;
   }
+
+  const t = document.getElementById('t-resumen');
+  if(rows.length===0){ t.innerHTML = `<tbody><tr><td class="empty">Sin resultados para estos filtros.</td></tr></tbody>`; return; }
 
   const head = `<thead><tr>
     ${headerCell('Mercaderista','n',state.sortResumen)}
