@@ -1,0 +1,1603 @@
+<meta charset="UTF-8">
+<title>Medición de Relevo Mercaderismo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --bg:#F4F6F9; --surface:#FFFFFF; --surface-2:#EEF1F6; --border:#DCE1E8;
+  --text:#1A2233; --text-muted:#64708A; --text-faint:#8B95AA;
+  --accent:#2A5FA8; --accent-soft:#E3ECFA; --accent-ink:#183A6B;
+  --good:#0B7A2E; --good-soft:#E1F5EC;
+  --warn:#9A6400; --warn-soft:#FBEEDA;
+  --critical:#B0332C; --critical-soft:#FBE4E2;
+  --shadow: 0 1px 2px rgba(20,30,50,0.06), 0 8px 24px -12px rgba(20,30,50,0.12);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#10151D; --surface:#171E29; --surface-2:#1D2531; --border:#2B3444;
+    --text:#E7ECF3; --text-muted:#93A0B8; --text-faint:#6C7891;
+    --accent:#6E9FE0; --accent-soft:rgba(110,159,224,0.16); --accent-ink:#CFE0F7;
+    --good:#3FBE87; --good-soft:rgba(63,190,135,0.14);
+    --warn:#E0A83F; --warn-soft:rgba(224,168,63,0.14);
+    --critical:#E2665F; --critical-soft:rgba(226,102,95,0.14);
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10151D; --surface:#171E29; --surface-2:#1D2531; --border:#2B3444;
+  --text:#E7ECF3; --text-muted:#93A0B8; --text-faint:#6C7891;
+  --accent:#6E9FE0; --accent-soft:rgba(110,159,224,0.16); --accent-ink:#CFE0F7;
+  --good:#3FBE87; --good-soft:rgba(63,190,135,0.14);
+  --warn:#E0A83F; --warn-soft:rgba(224,168,63,0.14);
+  --critical:#E2665F; --critical-soft:rgba(226,102,95,0.14);
+  --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+  color-scheme: dark;
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size:14px; line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{ font-family:"Lexend", "IBM Plex Sans", sans-serif; text-wrap:balance; margin:0; }
+.num{ font-family:"IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; text-align:center; }
+
+.wrap{ max-width:1400px; margin:0 auto; padding:28px 24px 64px; }
+
+/* ---------- Header ---------- */
+.hero{ display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-end; gap:16px; margin-bottom:22px; }
+.hero .eyebrow{ font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); font-weight:600; margin-bottom:6px; }
+.hero h1{ font-size:28px; font-weight:700; color:var(--text); }
+.hero p{ margin:6px 0 0; color:var(--text-muted); font-size:13.5px; max-width:64ch; }
+.hero .cutoff{ text-align:right; font-size:12px; color:var(--text-faint); display:flex; flex-direction:column; align-items:flex-end; gap:8px; }
+.hero .cutoff strong{ color:var(--text); font-family:"IBM Plex Mono",monospace; }
+.update-box{ display:flex; flex-direction:column; align-items:flex-end; gap:4px; }
+.update-btn{
+  font:inherit; font-size:12.5px; font-weight:600; color:var(--accent); background:var(--accent-soft);
+  border:1px solid transparent; border-radius:8px; padding:7px 12px; cursor:pointer; white-space:nowrap;
+}
+.update-btn:hover{ filter:brightness(0.97); }
+.update-btn:disabled{ color:var(--text-faint); background:var(--surface-2); cursor:not-allowed; }
+.update-status{ font-size:11.5px; color:var(--text-faint); max-width:220px; text-align:right; }
+.update-status.err{ color:var(--critical); }
+.update-status.ok{ color:var(--good); }
+
+/* ---------- Meta (top-level) tiles ---------- */
+.tiles.meta{ display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:10px; margin-bottom:18px; }
+.tiles.meta .tile{ padding:13px 16px; }
+.tiles.meta .tile .label{ font-size:11px; }
+.tiles.meta .tile .value{ font-size:25px; }
+
+/* ---------- Stat tiles ---------- */
+.tiles{ display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:8px; margin-bottom:16px; }
+.tiles.compact{ grid-template-columns:repeat(auto-fit,minmax(118px,1fr)); margin-bottom:10px; }
+.tile{ background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:9px 11px; box-shadow:var(--shadow); }
+.tile .label{ font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.03em; font-weight:600; }
+.tile .value{ font-size:18px; font-weight:600; margin-top:3px; font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; }
+.tile .sub{ font-size:10px; color:var(--text-faint); margin-top:1px; }
+.tile.alert .value{ color:var(--critical); }
+.tile.good .value{ color:var(--good); }
+
+/* ---------- Filter bar ---------- */
+.filterbar{
+  position:sticky; top:0; z-index:20; background:var(--bg);
+  padding:10px 0 12px; margin-bottom:14px; border-bottom:1px solid var(--border);
+}
+.filterbar-toggle{ display:none; }
+.filterbar-controls{
+  display:flex; flex-wrap:wrap; gap:8px; align-items:center;
+}
+.filterbar select, .filterbar input[type="search"]{
+  font:inherit; font-size:13px; background:var(--surface); color:var(--text);
+  border:1px solid var(--border); border-radius:8px; padding:7px 10px; min-width:126px;
+}
+.filterbar input[type="search"]{ min-width:190px; flex:1 1 190px; }
+.filterbar select:focus, .filterbar input:focus{ outline:2px solid var(--accent); outline-offset:1px; }
+.filterbar .clear{
+  background:transparent; border:1px solid var(--border); color:var(--text-muted);
+  border-radius:8px; padding:7px 12px; font:inherit; font-size:13px; cursor:pointer;
+}
+.filterbar .clear:hover{ background:var(--surface-2); color:var(--text); }
+.filterbar .count{ font-size:12px; color:var(--text-faint); margin-left:auto; white-space:nowrap; }
+
+/* ---------- Tabs ---------- */
+.tabs{ display:flex; gap:4px; margin-bottom:14px; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+.tab{
+  font:inherit; font-size:13.5px; font-weight:500; color:var(--text-muted);
+  background:transparent; border:none; padding:10px 14px; cursor:pointer;
+  border-bottom:2px solid transparent; margin-bottom:-1px;
+}
+.tab:hover{ color:var(--text); }
+.tab.active{ color:var(--accent); border-bottom-color:var(--accent); font-weight:600; }
+.panel{ display:none; }
+.panel.active{ display:block; }
+
+.subhead{ display:flex; align-items:baseline; justify-content:space-between; margin:4px 0 8px; gap:12px; flex-wrap:wrap; }
+.subhead h3{ font-size:15px; font-weight:600; }
+.subhead p{ margin:2px 0 0; font-size:12.5px; color:var(--text-muted); max-width:76ch; }
+.subhead .toggle-all{
+  background:transparent; border:1px solid var(--border); color:var(--text-muted);
+  border-radius:8px; padding:6px 11px; font:inherit; font-size:12.5px; cursor:pointer; white-space:nowrap;
+}
+.subhead .toggle-all:hover{ background:var(--surface-2); color:var(--text); }
+.section + .section{ margin-top:26px; }
+
+/* ---------- Insight cards (Resumen) ---------- */
+.insights-grid{ display:grid; grid-template-columns:1.3fr 1fr 1fr; gap:12px; margin-bottom:18px; }
+@media (max-width: 980px){ .insights-grid{ grid-template-columns:1fr; } }
+.insight-card{ background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px 16px; box-shadow:var(--shadow); min-width:0; }
+.insight-card h4{ font-size:11.5px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:.03em; margin-bottom:11px; }
+.rank-cols{ display:grid; grid-template-columns:1fr 1fr; gap:16px; min-width:0; }
+.rank-cols > div{ min-width:0; }
+.rank-subhead{ font-size:11px; color:var(--text-faint); margin-bottom:6px; }
+.rank-list{ display:flex; flex-direction:column; gap:6px; min-width:0; }
+.rank-row{ display:flex; align-items:center; gap:8px; font-size:12.5px; min-width:0; }
+.rank-row .rname{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.rank-row .rpct{ font-family:"IBM Plex Mono",monospace; font-weight:600; font-size:12px; }
+.gap-row{ display:flex; align-items:center; gap:8px; font-size:12.5px; margin-bottom:8px; }
+.gap-row:last-child{ margin-bottom:0; }
+.gap-row .gname{ width:60px; flex:none; color:var(--text-muted); }
+.gap-row .gtrack{ flex:1; height:7px; border-radius:99px; background:var(--surface-2); overflow:hidden; }
+.gap-row .gfill{ height:100%; border-radius:99px; }
+.gap-row .gpct{ width:38px; text-align:right; font-family:"IBM Plex Mono",monospace; font-size:11.5px; }
+.dist-bar{ display:flex; height:14px; border-radius:99px; overflow:hidden; margin-bottom:12px; background:var(--surface-2); }
+.dist-seg{ height:100%; }
+.dist-legend{ display:flex; flex-direction:column; gap:6px; }
+.dist-legend-row{ display:flex; align-items:center; gap:7px; font-size:12px; }
+.dist-dot{ width:8px; height:8px; border-radius:99px; flex:none; }
+.dist-legend-row strong{ margin-left:auto; font-family:"IBM Plex Mono",monospace; }
+
+/* ---------- WhatsApp text panel (Evaluación) ---------- */
+.wa-panel{ background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px 16px; box-shadow:var(--shadow); margin-bottom:16px; }
+.wa-panel .wa-head{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:8px; }
+.wa-panel h4{ font-size:11.5px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:.03em; }
+.wa-panel p{ margin:0; font-size:12px; color:var(--text-faint); }
+.wa-panel textarea{
+  width:100%; min-height:110px; resize:vertical; font-family:"IBM Plex Mono",monospace; font-size:12.5px;
+  background:var(--surface-2); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:10px 12px;
+}
+.wa-panel .wa-actions{ display:flex; align-items:center; gap:10px; margin-top:8px; }
+.wa-panel .wa-copy{
+  font:inherit; font-size:12.5px; font-weight:600; color:var(--accent); background:var(--accent-soft);
+  border:1px solid transparent; border-radius:8px; padding:7px 12px; cursor:pointer; white-space:nowrap;
+}
+.wa-panel .wa-copy:hover{ filter:brightness(0.97); }
+.wa-panel .wa-status{ font-size:11.5px; color:var(--text-faint); }
+.wa-panel .wa-status.ok{ color:var(--good); }
+
+/* ---------- Result badge ---------- */
+.result-badge{ display:inline-flex; align-items:center; font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:99px; white-space:nowrap; }
+.result-badge.excelente{ background:var(--good-soft); color:var(--good); }
+.result-badge.bueno{ background:var(--accent-soft); color:var(--accent-ink); }
+.result-badge.seguimiento{ background:var(--warn-soft); color:var(--warn); }
+.result-badge.critico{ background:var(--critical-soft); color:var(--critical); }
+
+/* ---------- Table ---------- */
+.tablewrap{ overflow-x:auto; border:1px solid var(--border); border-radius:10px; background:var(--surface); box-shadow:var(--shadow); }
+table{ border-collapse:collapse; width:100%; }
+thead th{
+  position:sticky; top:0; background:var(--surface-2); text-align:left;
+  font-size:10.5px; text-transform:uppercase; letter-spacing:.02em; color:var(--text-muted);
+  font-weight:600; padding:6px 8px; border-bottom:1px solid var(--border); cursor:pointer; white-space:nowrap;
+}
+thead th:hover{ color:var(--text); }
+thead th .arrow{ font-size:9px; opacity:.5; margin-left:2px; }
+tbody td{ padding:5px 8px; border-bottom:1px solid var(--border); font-size:12px; vertical-align:middle; white-space:nowrap; }
+tbody td.wrap-cell{ white-space:normal; max-width:280px; }
+tbody tr:last-child td{ border-bottom:none; }
+tbody tr:hover{ background:var(--surface-2); }
+td.name{ font-weight:500; white-space:nowrap; }
+td.code{ font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--text-muted); text-align:center; }
+td:has(> .meter), td:has(> .dot), td:has(> .chip-total), td:has(> .chip-freq),
+td:has(> .badge), td:has(> .alert-badge), td:has(> .warn-badge), td:has(> .ok-badge), td:has(> .result-badge) {
+  text-align:center;
+}
+.badge{ display:inline-block; font-size:10px; font-weight:600; padding:1px 6px; border-radius:99px; }
+.badge.sr{ background:var(--accent-soft); color:var(--accent-ink); }
+.badge.m{ background:var(--surface-2); color:var(--text-muted); }
+.badge.imp{ background:var(--warn-soft); color:var(--warn); }
+
+/* mini progress meter for % columns */
+.meter{ display:inline-flex; align-items:center; gap:5px; min-width:56px; }
+.meter .track{ width:34px; flex:none; height:5px; border-radius:99px; background:var(--surface-2); overflow:hidden; }
+.meter .fill{ height:100%; border-radius:99px; }
+.meter .pct{ font-family:"IBM Plex Mono",monospace; font-size:11px; width:34px; text-align:right; font-variant-numeric:tabular-nums; }
+.fill.good{ background:var(--good); } .pct.good{ color:var(--good); }
+.fill.warn{ background:var(--warn); } .pct.warn{ color:var(--warn); }
+.fill.critical{ background:var(--critical); } .pct.critical{ color:var(--critical); }
+
+/* check / count cells for detail table */
+.dot{ display:inline-flex; align-items:center; justify-content:center; min-width:17px; height:17px; padding:0 3px; border-radius:5px; font-size:10.5px; font-weight:700; font-family:"IBM Plex Mono",monospace; }
+.dot.si{ background:var(--good-soft); color:var(--good); }
+.dot.no{ background:var(--surface-2); color:var(--text-faint); }
+.chip-total{ display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:19px; padding:0 5px; border-radius:6px; font-family:"IBM Plex Mono",monospace; font-size:11px; font-weight:600; }
+.chip-freq{ display:inline-flex; align-items:center; gap:4px; font-family:"IBM Plex Mono",monospace; font-size:11px; padding:1px 6px; border-radius:6px; font-weight:600; }
+
+.alert-badge{ display:inline-flex; align-items:center; gap:4px; font-size:10.5px; font-weight:600; padding:2px 7px; border-radius:99px; background:var(--critical-soft); color:var(--critical); white-space:nowrap; }
+.warn-badge{ display:inline-flex; align-items:center; gap:4px; font-size:10.5px; font-weight:600; padding:2px 7px; border-radius:99px; background:var(--warn-soft); color:var(--warn); white-space:nowrap; }
+.ok-badge{ display:inline-flex; align-items:center; gap:4px; font-size:10.5px; font-weight:500; padding:2px 7px; border-radius:99px; background:var(--good-soft); color:var(--good); white-space:nowrap; }
+
+.empty{ padding:36px; text-align:center; color:var(--text-faint); font-size:13px; }
+.note{ font-size:12px; color:var(--text-faint); margin-top:8px; max-width:90ch; }
+
+footer{ margin-top:28px; font-size:12px; color:var(--text-faint); border-top:1px solid var(--border); padding-top:14px; }
+footer strong{ color:var(--text-muted); }
+
+/* ---------- Ciudad/Mercado accordion (reused by Precios, Acciones, Mercado→PDV) ---------- */
+.mk-row td{ background:var(--surface-2); font-weight:600; cursor:pointer; }
+.mk-row td.mk-name{ display:flex; align-items:center; gap:8px; }
+.mk-row .chev{ display:inline-block; transition:transform .15s ease; color:var(--text-faint); font-size:11px; }
+.mk-row.open .chev{ transform:rotate(90deg); }
+.mk-row .mk-count{ font-weight:400; color:var(--text-muted); font-size:12px; }
+.pdv-row{ display:none; }
+.pdv-row.show{ display:table-row; }
+.pdv-row td.pdv-name{ padding-left:30px; font-weight:400; }
+.mk-alert-dot{ display:inline-block; width:7px; height:7px; border-radius:99px; background:var(--critical); flex:none; }
+
+/* ---------- Responsive: tablet ---------- */
+@media (max-width: 900px){
+  .wrap{ padding:20px 16px 48px; }
+  .tiles.meta{ grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); }
+}
+
+/* ---------- Responsive: mobile ---------- */
+@media (max-width: 640px){
+  .hero{ flex-direction:column; align-items:flex-start; }
+  .hero .cutoff{ text-align:left; }
+  .wrap{ padding:14px 12px 40px; }
+  .rank-cols{ grid-template-columns:1fr; gap:14px; }
+
+  /* filtros: colapsados detrás de un botón "Filtros (N)" para no tapar el contenido */
+  .filterbar{ padding:8px 0 10px; }
+  .filterbar-toggle{
+    display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%;
+    font:inherit; font-size:13.5px; font-weight:600; color:var(--text);
+    background:var(--surface); border:1px solid var(--border); border-radius:10px;
+    padding:11px 14px; cursor:pointer;
+  }
+  .fb-badge{ display:inline-flex; align-items:center; justify-content:center; min-width:19px; height:19px; padding:0 5px;
+    background:var(--accent); color:#fff; border-radius:99px; font-size:11px; font-weight:700; margin-left:6px; }
+  .fb-badge.zero{ background:var(--surface-2); color:var(--text-faint); }
+  .fb-chev{ transition:transform .15s ease; color:var(--text-faint); font-size:11px; }
+  .fb-chev.open{ transform:rotate(180deg); }
+  .filterbar-controls{ display:none; flex-direction:column; align-items:stretch; margin-top:8px; }
+  .filterbar-controls.open{ display:flex; }
+  .filterbar select, .filterbar input[type="search"]{ min-width:0; flex:none; width:100%; font-size:15px; padding:11px 12px; }
+  .filterbar .clear{ width:100%; padding:11px 12px; }
+  .filterbar .count{ margin-left:0; text-align:left; }
+
+  /* pestañas: tira horizontal deslizable en vez de envolver en varias filas */
+  .tabs{ flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+  .tabs::-webkit-scrollbar{ display:none; }
+  .tab{ flex:none; }
+
+  .tiles.meta{ grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); }
+  .tiles{ grid-template-columns:repeat(auto-fit,minmax(100px,1fr)); }
+  .subhead{ flex-direction:column; align-items:flex-start; }
+  .subhead .toggle-all{ width:100%; }
+  table{ font-size:11px; }
+  .wa-actions{ flex-wrap:wrap; }
+  .access-card{ padding:22px 18px; }
+}
+
+/* ---------- Access gate (selección de usuario) ---------- */
+.access-gate{
+  min-height:100dvh; display:flex; align-items:center; justify-content:center; padding:24px 16px;
+}
+.access-card{
+  width:100%; max-width:440px; background:var(--surface); border:1px solid var(--border); border-radius:16px;
+  padding:28px 24px; box-shadow:var(--shadow); text-align:center;
+}
+.access-card .eyebrow{ font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); font-weight:600; margin-bottom:6px; }
+.access-card h1{ font-size:22px; font-weight:700; margin-bottom:8px; }
+.access-card p{ margin:0 0 20px; color:var(--text-muted); font-size:13px; }
+.access-list{ display:flex; flex-direction:column; gap:8px; max-height:46vh; overflow-y:auto; margin-bottom:18px; text-align:left; }
+.access-item{
+  font:inherit; font-size:14px; font-weight:500; color:var(--text); background:var(--surface-2);
+  border:1px solid var(--border); border-radius:10px; padding:12px 14px; cursor:pointer; text-align:left;
+}
+.access-item:hover{ background:var(--accent-soft); color:var(--accent-ink); border-color:var(--accent); }
+.access-admin{ border-top:1px solid var(--border); padding-top:16px; }
+.access-admin-btn{
+  font:inherit; font-size:12.5px; font-weight:600; color:var(--text-muted); background:transparent;
+  border:1px solid var(--border); border-radius:8px; padding:8px 14px; cursor:pointer;
+}
+.access-admin-btn:hover{ background:var(--surface-2); color:var(--text); }
+
+.session-box{ display:flex; align-items:center; gap:8px; font-size:11.5px; color:var(--text-faint); margin-top:4px; }
+.session-box .who{ color:var(--text); font-weight:600; }
+.session-box button{
+  font:inherit; font-size:11.5px; color:var(--accent); background:none; border:none; cursor:pointer; padding:0; text-decoration:underline;
+}
+</style>
+
+<div class="wrap">
+  <div class="access-gate" id="accessGate">
+    <div class="access-card">
+      <div class="eyebrow">San Fernando · Canal Mayorista</div>
+      <h1>Medición de Relevo Mercaderismo</h1>
+      <p>Ingresa con tu usuario y contraseña.</p>
+      <form id="loginForm" style="text-align:left; display:flex; flex-direction:column; gap:10px; margin-bottom:6px;">
+        <label style="font-size:12px; color:var(--text-muted); font-weight:600;">Usuario
+          <input type="text" id="loginUser" autocomplete="username" required
+            style="width:100%; margin-top:4px; font:inherit; font-size:14px; background:var(--surface-2); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:10px 12px;">
+        </label>
+        <label style="font-size:12px; color:var(--text-muted); font-weight:600;">Contraseña
+          <input type="password" id="loginPass" autocomplete="current-password" required
+            style="width:100%; margin-top:4px; font:inherit; font-size:14px; background:var(--surface-2); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:10px 12px;">
+        </label>
+        <button type="submit" id="btnLogin" class="access-admin-btn" style="background:var(--accent); color:#fff; border-color:var(--accent); padding:11px 14px; font-size:14px;">Entrar</button>
+        <div id="loginError" style="color:var(--critical); font-size:12.5px; min-height:16px;"></div>
+      </form>
+    </div>
+  </div>
+
+  <div id="dashboardApp" hidden>
+  <div class="hero">
+    <div>
+      <div class="eyebrow">San Fernando · Canal Mayorista</div>
+      <h1>Medición de Relevo Mercaderismo</h1>
+      <p>Cruce del planning (personal activo, actividad Mercaderismo / Mercaderismo Senior) contra los relevos de campo registrados en la BD KPI: Precios, Acciones, Stock, Share of People (SOP) y Share of Shelf (SOS).</p>
+      <div class="session-box">
+        <span>Viendo como: <span class="who" id="sessionWho"></span></span>
+        <button type="button" id="btnChangeUser">Cerrar sesión</button>
+      </div>
+    </div>
+    <div class="cutoff">
+      <div id="cutoffLabel">Periodo <strong>Agosto 2026</strong><br>Corte al <strong>21-ago-2026</strong></div>
+      <div class="update-status" id="updateStatus"></div>
+    </div>
+  </div>
+
+  <div class="tiles meta" id="metaTiles"></div>
+
+  <div class="filterbar" id="filterbarGeneral">
+    <button class="filterbar-toggle" id="btnFilterToggle" type="button" aria-expanded="false">
+      <span>Filtros <span class="fb-badge zero" id="fbBadge">0</span></span>
+      <span class="fb-chev" id="fbChev">▾</span>
+    </button>
+    <div class="filterbar-controls" id="filterbarControls">
+      <select id="fRegion"><option value="">Región (todas)</option></select>
+      <select id="fZona"><option value="">Zona (todas)</option></select>
+      <select id="fCiudad"><option value="">Ciudad (todas)</option></select>
+      <select id="fDist"><option value="">Distribuidora (todas)</option></select>
+      <select id="fMercado"><option value="">Mercado (todos)</option></select>
+      <select id="fSupervisor"><option value="">Supervisor (todos)</option></select>
+      <select id="fMercaderista"><option value="">Mercaderista (todos)</option></select>
+      <select id="fEstado">
+        <option value="">Relevo (todos)</option>
+        <option value="relevado">Relevado</option>
+        <option value="pendiente">Pendiente de relevo</option>
+      </select>
+      <input type="search" id="fSearch" placeholder="Buscar mercaderista o DNI…">
+      <button class="clear" id="btnClear">Limpiar filtros</button>
+      <span class="count" id="rowCount"></span>
+    </div>
+  </div>
+
+  <div class="tiles" id="tiles"></div>
+
+  <div class="tabs">
+    <button class="tab active" data-panel="p-resumen">Resumen por mercaderista</button>
+    <button class="tab" data-panel="p-detalle">Detalle por PDV</button>
+    <button class="tab" data-panel="p-freq">Cumplimiento por frecuencia</button>
+    <button class="tab" data-panel="p-precios">Precios</button>
+    <button class="tab" data-panel="p-acciones">Acciones</button>
+    <button class="tab" data-panel="p-sos">SOS Supervisores</button>
+    <button class="tab" data-panel="p-eval">Evaluación</button>
+  </div>
+
+  <div class="panel active" id="p-resumen">
+    <div class="insights-grid" id="resumenInsights"></div>
+    <div class="tablewrap"><table id="t-resumen"></table></div>
+  </div>
+  <div class="panel" id="p-detalle">
+    <div class="tablewrap"><table id="t-detalle"></table></div>
+  </div>
+
+  <div class="panel" id="p-freq">
+    <p class="note">SOP y SOS: objetivo <strong>1 vez al mes</strong> por PDV. Precios y Stock: objetivo <strong>1 vez por cada semana</strong> programada (semana lun–dom). Acciones no tiene una periodicidad normada por la operación; se usa 1 vez al mes como piso de referencia mínimo según el patrón observado en los datos. El SOS se cruza por cliente (PDV): si lo relevó el supervisor o el mercaderista, cuenta — ver también "SOS Supervisores" para el cumplimiento específico del supervisor.</p>
+    <div class="tablewrap"><table id="t-freq"></table></div>
+  </div>
+
+  <div class="panel" id="p-precios">
+    <div id="preciosRollupSection">
+    <div class="subhead">
+      <div>
+        <h3>Resumen por ciudad y mercado</h3>
+        <p>El objetivo es que cada punto de venta (PDV) tenga al menos un relevo de precios en el mes. Agrupado por Ciudad — haz clic para desplegar sus mercados. (Solo administrador.)</p>
+      </div>
+      <button class="toggle-all" id="btnTogglePreciosRollup">Expandir todo</button>
+    </div>
+    <div class="tablewrap"><table id="t-precios-rollup"></table></div>
+    </div>
+
+    <div class="subhead" style="margin-top:28px">
+      <div>
+        <h3>Detalle por producto (San Fernando vs. Competencia)</h3>
+        <p>Por PDV: catálogo detectado de productos San Fernando y de la competencia, y cuántos tienen precio de venta relevado en el mes. Cada mercado agrupa sus PDV — haz clic para desplegarlos.</p>
+      </div>
+      <button class="toggle-all" id="btnToggleMercados">Expandir todo</button>
+    </div>
+    <div class="tablewrap"><table id="t-precios"></table></div>
+  </div>
+
+  <div class="panel" id="p-acciones">
+    <div id="accionesRollupSection">
+    <div class="subhead">
+      <div>
+        <h3>Resumen por ciudad y mercado</h3>
+        <p>El objetivo es que cada punto de venta (PDV) tenga al menos un relevo de Acciones de la competencia en el mes. Agrupado por Ciudad — haz clic para desplegar sus mercados. (Solo administrador.)</p>
+      </div>
+      <button class="toggle-all" id="btnToggleAccionesRollup">Expandir todo</button>
+    </div>
+    <div class="tablewrap"><table id="t-acciones-rollup"></table></div>
+    </div>
+
+    <div class="subhead" style="margin-top:28px">
+      <div>
+        <h3>Detalle por PDV</h3>
+        <p>Estado de Acciones por cada punto de venta programado en agosto.</p>
+      </div>
+    </div>
+    <div class="tablewrap"><table id="t-acciones"></table></div>
+  </div>
+
+  <div class="panel" id="p-sos">
+    <div class="subhead">
+      <div>
+        <h3>SOS — cobertura por supervisor</h3>
+        <p>SOS (Share of Shelf): objetivo = clientes (PDV) únicos bajo cada supervisor, incluye Mercaderismo y Mercaderismo Senior, sin duplicar cuando 2 mercaderistas comparten el mismo cliente. El avance suma lo relevado por el supervisor Y lo relevado por un mercaderista en ese mismo PDV (no se duplican: cada PDV cuenta una sola vez, según quien lo haya hecho). El SOS también se reconoce en el ranking del mercaderista (pestaña Resumen), donde cuenta sin importar quién lo relevó.</p>
+      </div>
+    </div>
+    <div class="tablewrap"><table id="t-sos"></table></div>
+
+    <div class="subhead">
+      <div>
+        <h3>SOS — detalle por PDV</h3>
+        <p>Cada PDV programado (actividad Mercaderismo) con su estado de SOS: relevado por un supervisor o pendiente.</p>
+      </div>
+    </div>
+    <div class="tablewrap"><table id="t-sos-detail"></table></div>
+  </div>
+
+  <div class="panel" id="p-eval">
+    <div class="wa-panel">
+      <div class="wa-head">
+        <h4>Texto preliminar para WhatsApp</h4>
+        <p>Usa los filtros de Región / Supervisor de arriba para acotar, luego copia el texto y la captura de la tabla.</p>
+      </div>
+      <textarea id="waText" readonly></textarea>
+      <div class="wa-actions">
+        <button class="wa-copy" id="waCopy" type="button">Copiar texto</button>
+        <span class="wa-status" id="waStatus"></span>
+      </div>
+    </div>
+    <div class="tablewrap"><table id="t-eval"></table></div>
+  </div>
+
+  <footer>
+    Fuente: <strong>Planning</strong> — FORMATO DE ASISTENCIA - TRADICIONAL MERCADERISMO.xlsx (hoja ASISTENCIA GENERAL), cruzado por Código GUTRADE ↔ Persona de interés y COD_LOCAL ↔ Punto de interés con <strong>BD KPI</strong> (Precios Nuevos Mayorista, Tarea Mayorista - Acciones/SOP/SOS/Stock/Evaluación). El personal activo se determina por su ÚLTIMO registro con estado confirmado en toda la base (no solo dentro de agosto): si hoy figura en otra actividad, ya no cuenta como Mercaderismo/Senior. Incluye además, por pedido explícito, a MATOS GOMEZ CARMEN TRUDI (Impulso Refuerzo) como única persona de Impulso considerada en este reporte. En Evaluación, cuando el DNI no cruza directo se reintenta por similitud de nombre contra el planning. % Asistencia = días con ASISTENCIA / días hábiles (excluye DESCANSO y días con status aún sin confirmar). % Cobertura = de las visitas a PDV programadas, cuántas se cumplieron realmente. El filtro "Relevo" aísla, en cada pestaña, lo que ya se completó de lo que sigue pendiente, para poder enviar solo el detalle faltante.
+    <div id="ownerNote" style="margin-top:6px"></div>
+  </footer>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://forjfsasziwfqgyqdvup.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZvcmpmc2Fzeml3ZnFneXFkdnVwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwNDAyNDYsImV4cCI6MjEwMzYxNjI0Nn0.awBYmtQprU1NGE2SvpSa-iB-SiMU2JclyWCfrZBNK6g';
+
+if(!window.supabase || typeof window.supabase.createClient !== 'function'){
+  document.addEventListener('DOMContentLoaded', ()=>{
+    const el = document.getElementById('loginError');
+    if(el) el.textContent = 'No se pudo cargar la librería de conexión (revisa tu internet y recarga la página).';
+  });
+  throw new Error('supabase-js no cargó');
+}
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let DATA = { resumen:[], detail:[], eval:[], freq:[], preciosProd:[], preciosCiudad:[], preciosMercado:[],
+             accionesAl:[], accionesCiudad:[], accionesMercado:[], sosSupervisores:[], sosDetail:[], meta:{} };
+let CURRENT_PROFILE = null; // { role, supervisor_name, email }
+
+function statusFor(pct){
+  if(pct >= 60) return 'good';
+  if(pct > 0) return 'warn';
+  return 'critical';
+}
+function esc(s){ return (s===null||s===undefined) ? '' : String(s); }
+function activityBadge(a){
+  a = a || '';
+  const cls = a.includes('SENIOR') ? 'sr' : (a.includes('MERCADERISMO') ? 'm' : 'imp');
+  const label = a.includes('SENIOR') ? 'Senior' : (a.includes('MERCADERISMO') ? 'Mercaderista' : titleCase(a));
+  return `<span class="badge ${cls}">${label}</span>`;
+}
+function titleCase(s){
+  if(!s) return '';
+  return s.toLowerCase().replace(/\p{L}+/gu, w => w[0].toUpperCase()+w.slice(1));
+}
+function dniOf(row){ return row.dni !== undefined ? row.dni : row.d; }
+function resultBadgeHTML(res){
+  const map = {EXCELENTE:'excelente', BUENO:'bueno', SEGUIMIENTO:'seguimiento', 'CRÍTICO':'critico'};
+  const cls = map[res] || 'seguimiento';
+  return `<span class="result-badge ${cls}">${esc(res)}</span>`;
+}
+
+// ---------- cascading filter dropdowns (Región → Zona → Ciudad → Distribuidora → Mercado → Supervisor → Mercaderista) ----------
+// DATA.detail carries all 7 dimensions together per PDV, so it's the source of truth
+// for which combinations actually exist.
+function uniqSorted(arr){ return [...new Set(arr.filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es')); }
+
+function optionsFor(field, exclude){
+  return uniqSorted(DATA.detail.filter(d=>{
+    if(exclude!=='region' && state.region && d.r!==state.region) return false;
+    if(exclude!=='zona' && state.zona && d.z!==state.zona) return false;
+    if(exclude!=='ciudad' && state.ciudad && d.c!==state.ciudad) return false;
+    if(exclude!=='dist' && state.dist && d.dist!==state.dist) return false;
+    if(exclude!=='mercado' && state.mercado && d.mk!==state.mercado) return false;
+    if(exclude!=='supervisor' && state.supervisor && d.s!==state.supervisor) return false;
+    if(exclude!=='mercaderista' && state.mercaderista && d.dni!==state.mercaderista) return false;
+    return true;
+  }).map(d=>d[field]));
+}
+
+function optionsForMercaderistaPairs(){
+  const rows = DATA.detail.filter(d=>{
+    if(state.region && d.r!==state.region) return false;
+    if(state.zona && d.z!==state.zona) return false;
+    if(state.ciudad && d.c!==state.ciudad) return false;
+    if(state.dist && d.dist!==state.dist) return false;
+    if(state.mercado && d.mk!==state.mercado) return false;
+    if(state.supervisor && d.s!==state.supervisor) return false;
+    return true;
+  });
+  const map = new Map();
+  rows.forEach(d=>{ if(!map.has(d.dni)) map.set(d.dni, d.n); });
+  return [...map.entries()].sort((a,b)=>a[1].localeCompare(b[1],'es'));
+}
+
+function fillSelect(id, values, currentValue){
+  const sel = document.getElementById(id);
+  sel.innerHTML = '';
+  const first = document.createElement('option');
+  first.value = ''; first.textContent = sel.dataset.allLabel;
+  sel.appendChild(first);
+  for(const v of values){
+    const o = document.createElement('option');
+    o.value = v; o.textContent = titleCase(v);
+    sel.appendChild(o);
+  }
+  sel.value = values.includes(currentValue) ? currentValue : '';
+}
+function fillSelectPairs(id, pairs, currentValue){
+  const sel = document.getElementById(id);
+  sel.innerHTML = '';
+  const first = document.createElement('option');
+  first.value = ''; first.textContent = sel.dataset.allLabel;
+  sel.appendChild(first);
+  for(const [v,label] of pairs){
+    const o = document.createElement('option');
+    o.value = v; o.textContent = titleCase(label);
+    sel.appendChild(o);
+  }
+  sel.value = pairs.some(p=>p[0]===currentValue) ? currentValue : '';
+}
+
+document.getElementById('fRegion').dataset.allLabel = 'Región (todas)';
+document.getElementById('fZona').dataset.allLabel = 'Zona (todas)';
+document.getElementById('fCiudad').dataset.allLabel = 'Ciudad (todas)';
+document.getElementById('fDist').dataset.allLabel = 'Distribuidora (todas)';
+document.getElementById('fMercado').dataset.allLabel = 'Mercado (todos)';
+document.getElementById('fSupervisor').dataset.allLabel = 'Supervisor (todos)';
+document.getElementById('fMercaderista').dataset.allLabel = 'Mercaderista (todos)';
+
+function refreshDropdowns(){
+  fillSelect('fRegion', optionsFor('r','region'), state.region);
+  fillSelect('fZona', optionsFor('z','zona'), state.zona);
+  fillSelect('fCiudad', optionsFor('c','ciudad'), state.ciudad);
+  fillSelect('fDist', optionsFor('dist','dist'), state.dist);
+  fillSelect('fMercado', optionsFor('mk','mercado'), state.mercado);
+  fillSelect('fSupervisor', optionsFor('s','supervisor'), state.supervisor);
+  fillSelectPairs('fMercaderista', optionsForMercaderistaPairs(), state.mercaderista);
+  if(state.region && !optionsFor('r','region').includes(state.region)) state.region='';
+  if(state.zona && !optionsFor('z','zona').includes(state.zona)) state.zona='';
+  if(state.ciudad && !optionsFor('c','ciudad').includes(state.ciudad)) state.ciudad='';
+  if(state.dist && !optionsFor('dist','dist').includes(state.dist)) state.dist='';
+  if(state.mercado && !optionsFor('mk','mercado').includes(state.mercado)) state.mercado='';
+  if(!state.lockedSupervisor && state.supervisor && !optionsFor('s','supervisor').includes(state.supervisor)) state.supervisor='';
+  if(state.mercaderista && !optionsForMercaderistaPairs().some(p=>p[0]===state.mercaderista)) state.mercaderista='';
+}
+
+const state = {
+  region:'', zona:'', ciudad:'', dist:'', mercado:'', supervisor:'', mercaderista:'', estado:'', search:'',
+  lockedSupervisor:false,
+  sortResumen:['dsm',-1], sortDetalle:['t',-1], sortFreq:['pend_p',-1],
+  sortAcciones:['pend',-1], sortSos:['pend',-1], sortSosDetail:['cum',1], sortEval:['ne',1],
+  openMercados: new Set(), mercadosAllOpen: false,
+  openCiudadPrecios: new Set(), allOpenCiudadPrecios: false,
+  openCiudadAcciones: new Set(), allOpenCiudadAcciones: false,
+};
+
+document.getElementById('fRegion').addEventListener('change', e=>{ state.region=e.target.value; refreshDropdowns(); render(); });
+document.getElementById('fZona').addEventListener('change', e=>{ state.zona=e.target.value; refreshDropdowns(); render(); });
+document.getElementById('fCiudad').addEventListener('change', e=>{ state.ciudad=e.target.value; refreshDropdowns(); render(); });
+document.getElementById('fDist').addEventListener('change', e=>{ state.dist=e.target.value; refreshDropdowns(); render(); });
+document.getElementById('fMercado').addEventListener('change', e=>{ state.mercado=e.target.value; refreshDropdowns(); render(); });
+document.getElementById('fSupervisor').addEventListener('change', e=>{ state.supervisor=e.target.value; refreshDropdowns(); render(); });
+document.getElementById('fMercaderista').addEventListener('change', e=>{ state.mercaderista=e.target.value; refreshDropdowns(); render(); });
+document.getElementById('fEstado').addEventListener('change', e=>{ state.estado=e.target.value; render(); });
+document.getElementById('fSearch').addEventListener('input', e=>{ state.search=e.target.value.trim().toLowerCase(); render(); });
+document.getElementById('btnClear').addEventListener('click', ()=>{
+  state.region=''; state.zona=''; state.ciudad=''; state.dist=''; state.mercado='';
+  state.mercaderista=''; state.estado=''; state.search='';
+  if(!state.lockedSupervisor) state.supervisor='';
+  document.getElementById('fSearch').value='';
+  document.getElementById('fEstado').value='';
+  refreshDropdowns();
+  render();
+});
+document.getElementById('btnFilterToggle').addEventListener('click', ()=>{
+  const controls = document.getElementById('filterbarControls');
+  const chev = document.getElementById('fbChev');
+  const open = !controls.classList.contains('open');
+  controls.classList.toggle('open', open);
+  chev.classList.toggle('open', open);
+  document.getElementById('btnFilterToggle').setAttribute('aria-expanded', open ? 'true' : 'false');
+});
+document.getElementById('btnToggleMercados').addEventListener('click', ()=>{
+  state.mercadosAllOpen = !state.mercadosAllOpen;
+  renderPrecios();
+});
+document.getElementById('btnTogglePreciosRollup').addEventListener('click', ()=>{
+  state.allOpenCiudadPrecios = !state.allOpenCiudadPrecios;
+  renderPreciosRollup();
+});
+document.getElementById('btnToggleAccionesRollup').addEventListener('click', ()=>{
+  state.allOpenCiudadAcciones = !state.allOpenCiudadAcciones;
+  renderAccionesRollup();
+});
+
+document.getElementById('waCopy').addEventListener('click', async ()=>{
+  const waText = document.getElementById('waText');
+  const waStatus = document.getElementById('waStatus');
+  const text = waText.value;
+  try{
+    await navigator.clipboard.writeText(text);
+    waStatus.textContent = 'Copiado ✓';
+    waStatus.className = 'wa-status ok';
+  }catch(e){
+    waText.focus();
+    waText.select();
+    let ok = false;
+    try{ ok = document.execCommand('copy'); }catch(e2){ ok = false; }
+    if(ok){
+      waStatus.textContent = 'Copiado ✓';
+      waStatus.className = 'wa-status ok';
+    } else {
+      waStatus.textContent = 'Selecciona el texto y usa Ctrl+C para copiarlo.';
+      waStatus.className = 'wa-status';
+    }
+  }
+  setTimeout(()=>{ waStatus.textContent=''; waStatus.className='wa-status'; }, 4000);
+});
+
+document.querySelectorAll('.tab').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.panel).classList.add('active');
+    renderTiles();
+    updateCount();
+  });
+});
+
+function passEstado(kind, row){
+  if(!state.estado) return true;
+  let pend;
+  switch(kind){
+    case 'resumen': pend = (row.res==='CRÍTICO' || row.res==='SEGUIMIENTO'); break;
+    case 'detail': pend = row.t===0; break;
+    case 'freq': pend = (row.p[2]>0 || row.st[2]>0 || row.sop[2]>0 || row.ac[2]>0 || row.sos[2]>0); break;
+    case 'precios': pend = row.rel===0; break;
+    case 'acciones': pend = !!row.alerta; break;
+    case 'sos': pend = !!row.alerta; break;
+    case 'sosDetail': pend = row.cum!==1; break;
+    case 'eval': pend = row.ne===0; break;
+    default: pend = false;
+  }
+  return state.estado==='pendiente' ? pend : !pend;
+}
+
+function matchCommon(row){
+  if(state.region && row.r !== state.region) return false;
+  if(state.zona && row.z !== undefined && row.z !== state.zona) return false;
+  if(state.ciudad && row.c !== state.ciudad) return false;
+  if(state.dist && row.dist !== undefined && !(row.dist||'').includes(state.dist)) return false;
+  if(state.mercado && row.mk !== undefined && !(row.mk||'').includes(state.mercado)) return false;
+  if(state.supervisor && row.s !== state.supervisor) return false;
+  if(state.mercaderista && dniOf(row) !== state.mercaderista) return false;
+  if(state.search){
+    const hay = ((row.n||'') + ' ' + (dniOf(row)||'')).toLowerCase();
+    if(!hay.includes(state.search)) return false;
+  }
+  return true;
+}
+
+function filteredResumen(){
+  return DATA.resumen.filter(r=> matchCommon(r) && passEstado('resumen', r));
+}
+function filteredDetalle(){
+  return DATA.detail.filter(d=> matchCommon(d) && passEstado('detail', d));
+}
+function filteredFreq(){
+  return DATA.freq.filter(d=> matchCommon(d) && passEstado('freq', d));
+}
+function filteredPreciosProd(){
+  return DATA.preciosProd.filter(d=> matchCommon(d) && passEstado('precios', d));
+}
+function filteredAcciones(){
+  return DATA.accionesAl.filter(d=> matchCommon(d) && passEstado('acciones', d));
+}
+function filteredCiudadRollup(rows){
+  return rows.filter(r=>{
+    if(state.region && r.r!==state.region) return false;
+    if(state.zona && r.z!==state.zona) return false;
+    if(state.ciudad && r.c!==state.ciudad) return false;
+    return true;
+  });
+}
+function filteredMercadoRollup(rows){
+  return rows.filter(r=>{
+    if(state.region && r.r!==state.region) return false;
+    if(state.zona && r.z!==state.zona) return false;
+    if(state.ciudad && r.c!==state.ciudad) return false;
+    if(state.dist && r.dist!==state.dist) return false;
+    if(state.mercado && r.mk!==state.mercado) return false;
+    return true;
+  });
+}
+function filteredSos(){
+  return DATA.sosSupervisores.filter(r=>{
+    if(state.region && r.r!==state.region) return false;
+    if(state.ciudad && r.c!==state.ciudad) return false;
+    if(state.supervisor && r.s!==state.supervisor) return false;
+    return passEstado('sos', r);
+  });
+}
+function filteredSosDetail(){
+  return DATA.sosDetail.filter(r=>{
+    if(state.region && r.r!==state.region) return false;
+    if(state.ciudad && r.c!==state.ciudad) return false;
+    if(state.supervisor && r.s!==state.supervisor) return false;
+    if(state.mercado && r.mk!==state.mercado) return false;
+    return passEstado('sosDetail', r);
+  });
+}
+function filteredEval(){
+  return DATA.eval.filter(e=> matchCommon(e) && passEstado('eval', e));
+}
+
+function sortRows(rows, key, dir){
+  return [...rows].sort((a,b)=>{
+    let va=a[key], vb=b[key];
+    if(Array.isArray(va)) va=va[va.length-1];
+    if(Array.isArray(vb)) vb=vb[vb.length-1];
+    if(typeof va === 'string') return dir*va.localeCompare(vb,'es');
+    return dir*((va??0)-(vb??0));
+  });
+}
+
+function headerCell(label, key, sortState){
+  const active = sortState[0]===key;
+  const arrow = active ? (sortState[1]===1?'▲':'▼') : '';
+  return `<th data-key="${key}">${label}<span class="arrow">${arrow}</span></th>`;
+}
+
+function meterHTML(cnt, total, pct){
+  const st = statusFor(pct);
+  return `<div class="meter" title="${cnt}/${total}"><div class="track"><div class="fill ${st}" style="width:${Math.min(pct,100)}%"></div></div><span class="pct ${st}">${pct}%</span></div>`;
+}
+
+function renderResumenInsights(){
+  const rows = filteredResumen();
+  const el = document.getElementById('resumenInsights');
+  if(rows.length===0){ el.innerHTML = ''; return; }
+
+  const sorted = [...rows].sort((a,b)=>b.dsm-a.dsm);
+  const top5 = sorted.slice(0,5);
+  const bottom5 = sorted.slice(-5).reverse();
+  const rankRow = (r,i)=>`<div class="rank-row">
+      <span class="rname" title="${esc(titleCase(r.n))}">${i+1}. ${esc(titleCase(r.n))}</span>
+      <span class="rpct" style="color:var(--${statusFor(r.dsm)})">${r.dsm}%</span>
+    </div>`;
+  const rankingHTML = `
+    <div class="insight-card">
+      <h4>Ranking de desempeño</h4>
+      <div class="rank-cols">
+        <div>
+          <div class="rank-subhead">Top 5</div>
+          <div class="rank-list">${top5.map((r,i)=>rankRow(r,i)).join('') || '<span class="rank-row">—</span>'}</div>
+        </div>
+        <div>
+          <div class="rank-subhead">A reforzar</div>
+          <div class="rank-list">${bottom5.map((r,i)=>rankRow(r,i)).join('') || '<span class="rank-row">—</span>'}</div>
+        </div>
+      </div>
+    </div>`;
+
+  const kpiDefs = [['Precios','kp'],['Acciones','ka'],['Stock','kst'],['SOP','ksop'],['SOS','ksos']];
+  const gaps = kpiDefs.map(([label,key])=>{
+    const avg = rows.length ? Math.round(rows.reduce((s,r)=>s+r[key][1],0)/rows.length*10)/10 : 0;
+    return {label, avg};
+  }).sort((a,b)=>a.avg-b.avg);
+  const gapsHTML = `
+    <div class="insight-card">
+      <h4>Brechas por indicador</h4>
+      ${gaps.map(g=>`<div class="gap-row">
+        <span class="gname">${g.label}</span>
+        <div class="gtrack"><div class="gfill" style="width:${Math.min(g.avg,100)}%;background:var(--${statusFor(g.avg)})"></div></div>
+        <span class="gpct" style="color:var(--${statusFor(g.avg)})">${g.avg}%</span>
+      </div>`).join('')}
+    </div>`;
+
+  const buckets = [['EXCELENTE','excelente','good'],['BUENO','bueno','accent'],['SEGUIMIENTO','seguimiento','warn'],['CRÍTICO','critico','critical']];
+  const counts = buckets.map(([key])=>rows.filter(r=>r.res===key).length);
+  const total = rows.length || 1;
+  const distHTML = `
+    <div class="insight-card">
+      <h4>Distribución de desempeño</h4>
+      <div class="dist-bar">${buckets.map(([key,cls,color],i)=>counts[i]>0?`<div class="dist-seg" style="width:${counts[i]/total*100}%;background:var(--${color})"></div>`:'').join('')}</div>
+      <div class="dist-legend">
+        ${buckets.map(([key,cls,color],i)=>`<div class="dist-legend-row"><span class="dist-dot" style="background:var(--${color})"></span>${titleCase(key)}<strong>${counts[i]}</strong></div>`).join('')}
+      </div>
+    </div>`;
+
+  el.innerHTML = rankingHTML + gapsHTML + distHTML;
+}
+
+function renderResumen(){
+  const rows = sortRows(filteredResumen(), state.sortResumen[0], state.sortResumen[1]);
+  const t = document.getElementById('t-resumen');
+  if(rows.length===0){ t.innerHTML = `<tbody><tr><td class="empty">Sin resultados para estos filtros.</td></tr></tbody>`; return; }
+  const head = `<thead><tr>
+    ${headerCell('Mercaderista','n',state.sortResumen)}
+    ${headerCell('DNI','d',state.sortResumen)}
+    ${headerCell('Actividad','a',state.sortResumen)}
+    ${headerCell('Región','r',state.sortResumen)}
+    ${headerCell('Zona','z',state.sortResumen)}
+    ${headerCell('Supervisor','s',state.sortResumen)}
+    ${headerCell('Ciudad','c',state.sortResumen)}
+    ${headerCell('PDV prog.','p',state.sortResumen)}
+    ${headerCell('Asistencia','asis',state.sortResumen)}
+    ${headerCell('Cobertura','cob',state.sortResumen)}
+    ${headerCell('Precios','kp',state.sortResumen)}
+    ${headerCell('Acciones','ka',state.sortResumen)}
+    ${headerCell('Stock','kst',state.sortResumen)}
+    ${headerCell('SOP','ksop',state.sortResumen)}
+    ${headerCell('SOS','ksos',state.sortResumen)}
+    ${headerCell('Promedio','dsm',state.sortResumen)}
+    ${headerCell('Resultado','res',state.sortResumen)}
+  </tr></thead>`;
+  const body = rows.map(r=>`<tr>
+    <td class="name">${esc(titleCase(r.n))}</td>
+    <td class="code">${esc(r.d)}</td>
+    <td>${activityBadge(r.a)}</td>
+    <td>${esc(titleCase(r.r))}</td>
+    <td>${esc(titleCase(r.z))}</td>
+    <td>${esc(titleCase(r.s))}</td>
+    <td>${esc(titleCase(r.c))}</td>
+    <td class="num">${r.p}</td>
+    <td>${meterHTML(r.asis[0], r.asis[1], r.asis[2])}</td>
+    <td>${meterHTML(r.cob[0], r.cob[1], r.cob[2])}</td>
+    <td>${meterHTML(r.kp[0], r.p, r.kp[1])}</td>
+    <td>${meterHTML(r.ka[0], r.p, r.ka[1])}</td>
+    <td>${meterHTML(r.kst[0], r.p, r.kst[1])}</td>
+    <td>${meterHTML(r.ksop[0], r.p, r.ksop[1])}</td>
+    <td>${meterHTML(r.ksos[0], r.p, r.ksos[1])}</td>
+    <td><span class="pct ${statusFor(r.dsm)}" style="font-weight:600">${r.dsm}%</span></td>
+    <td>${resultBadgeHTML(r.res)}</td>
+  </tr>`).join('');
+  t.innerHTML = head + `<tbody>${body}</tbody>`;
+  t.querySelectorAll('thead th').forEach(th=>th.addEventListener('click', ()=>{
+    const key = th.dataset.key;
+    state.sortResumen = state.sortResumen[0]===key ? [key, -state.sortResumen[1]] : [key,-1];
+    renderResumen();
+  }));
+}
+
+function countCellHTML(v){
+  const cls = v>0 ? 'si' : 'no';
+  return `<span class="dot ${cls}" title="${v} vez(es) en el mes">${v}</span>`;
+}
+
+function renderDetalle(){
+  const rows = sortRows(filteredDetalle(), state.sortDetalle[0], state.sortDetalle[1]);
+  const t = document.getElementById('t-detalle');
+  if(rows.length===0){ t.innerHTML = `<tbody><tr><td class="empty">Sin resultados para estos filtros.</td></tr></tbody>`; return; }
+  const head = `<thead><tr>
+    ${headerCell('Mercaderista','n',state.sortDetalle)}
+    ${headerCell('Región','r',state.sortDetalle)}
+    ${headerCell('Ciudad','c',state.sortDetalle)}
+    ${headerCell('Mercado','mk',state.sortDetalle)}
+    ${headerCell('Distribuidora','dist',state.sortDetalle)}
+    ${headerCell('COD Local','cl',state.sortDetalle)}
+    ${headerCell('PDV','pdv',state.sortDetalle)}
+    ${headerCell('Días prog.','dp',state.sortDetalle)}
+    ${headerCell('Precios','kp',state.sortDetalle)}
+    ${headerCell('Acciones','ka',state.sortDetalle)}
+    ${headerCell('Stock','kst',state.sortDetalle)}
+    ${headerCell('SOP','ksop',state.sortDetalle)}
+    ${headerCell('SOS','ksos',state.sortDetalle)}
+    ${headerCell('Total','t',state.sortDetalle)}
+  </tr></thead>`;
+  const body = rows.map(d=>{
+    const st = d.t===0?'critical':(d.t>=3?'good':'warn');
+    return `<tr>
+    <td class="name">${esc(titleCase(d.n))}</td>
+    <td>${esc(titleCase(d.r))}</td>
+    <td>${esc(titleCase(d.c))}</td>
+    <td>${esc(titleCase(d.mk))}</td>
+    <td>${esc(titleCase(d.dist))}</td>
+    <td class="code">${esc(d.cl)}</td>
+    <td class="name">${esc(titleCase(d.pdv))}</td>
+    <td class="num">${d.dp}</td>
+    <td>${countCellHTML(d.kp)}</td>
+    <td>${countCellHTML(d.ka)}</td>
+    <td>${countCellHTML(d.kst)}</td>
+    <td>${countCellHTML(d.ksop)}</td>
+    <td>${countCellHTML(d.ksos)}</td>
+    <td><span class="chip-total" style="background:var(--${st}-soft);color:var(--${st})">${d.t}/5</span></td>
+  </tr>`;}).join('');
+  t.innerHTML = head + `<tbody>${body}</tbody>`;
+  t.querySelectorAll('thead th').forEach(th=>th.addEventListener('click', ()=>{
+    const key = th.dataset.key;
+    state.sortDetalle = state.sortDetalle[0]===key ? [key, -state.sortDetalle[1]] : [key,-1];
+    renderDetalle();
+  }));
+}
+
+function freqChip(triple, unit){
+  const [obj, cum, pend] = triple;
+  const st = pend===0 ? 'good' : (cum>0 ? 'warn' : 'critical');
+  return `<span class="chip-freq" style="background:var(--${st}-soft);color:var(--${st})">${cum}/${obj} ${unit}</span>`;
+}
+
+function renderFreq(){
+  const rows = sortRows(filteredFreq(), state.sortFreq[0], state.sortFreq[1]);
+  const t = document.getElementById('t-freq');
+  if(rows.length===0){ t.innerHTML = `<tbody><tr><td class="empty">Sin resultados para estos filtros.</td></tr></tbody>`; return; }
+  const head = `<thead><tr>
+    ${headerCell('Mercaderista','n',state.sortFreq)}
+    ${headerCell('Región','r',state.sortFreq)}
+    ${headerCell('Ciudad','c',state.sortFreq)}
+    ${headerCell('Mercado','mk',state.sortFreq)}
+    ${headerCell('PDV','pdv',state.sortFreq)}
+    ${headerCell('Semanas prog.','sp',state.sortFreq)}
+    ${headerCell('Precios (semanal)','p',state.sortFreq)}
+    ${headerCell('Stock (semanal)','st',state.sortFreq)}
+    ${headerCell('SOP (mensual)','sop',state.sortFreq)}
+    ${headerCell('Acciones (ref. mensual)','ac',state.sortFreq)}
+    ${headerCell('SOS (mensual, por cliente)','sos',state.sortFreq)}
+  </tr></thead>`;
+  const body = rows.map(r=>`<tr>
+    <td class="name">${esc(titleCase(r.n))}</td>
+    <td>${esc(titleCase(r.r))}</td>
+    <td>${esc(titleCase(r.c))}</td>
+    <td>${esc(titleCase(r.mk))}</td>
+    <td class="name">${esc(titleCase(r.pdv))}</td>
+    <td class="num">${r.sp}</td>
+    <td>${freqChip(r.p.slice(0,3),'sem')}</td>
+    <td>${freqChip(r.st.slice(0,3),'sem')}</td>
+    <td>${freqChip(r.sop,'mes')}</td>
+    <td>${freqChip(r.ac,'mes')}</td>
+    <td>${freqChip(r.sos,'mes')}</td>
+  </tr>`).join('');
+  t.innerHTML = head + `<tbody>${body}</tbody>`;
+  t.querySelectorAll('thead th').forEach(th=>th.addEventListener('click', ()=>{
+    const key = th.dataset.key;
+    state.sortFreq = state.sortFreq[0]===key ? [key, -state.sortFreq[1]] : [key,-1];
+    renderFreq();
+  }));
+}
+
+function estadoBadge(estado){
+  if(estado==='SIN RELEVO EN EL MES') return `<span class="alert-badge">⚠ Sin relevo</span>`;
+  if(estado==='PRODUCTOS PENDIENTES') return `<span class="warn-badge">◐ Pendiente</span>`;
+  return `<span class="ok-badge">✓ Completo</span>`;
+}
+
+function renderCiudadMercado(tableId, ciudadRowsAll, mercadoRowsAll, openSet, flagName, toggleBtnId, rerenderFn){
+  const t = document.getElementById(tableId);
+  const cRows = filteredCiudadRollup(ciudadRowsAll);
+  if(cRows.length===0){ t.innerHTML = `<tbody><tr><td class="empty">Sin resultados para estos filtros.</td></tr></tbody>`; document.getElementById(toggleBtnId).textContent = 'Expandir todo'; return; }
+  const mercadoByCiudad = new Map();
+  filteredMercadoRollup(mercadoRowsAll).forEach(m=>{
+    const key = m.r + '|' + m.c;
+    if(!mercadoByCiudad.has(key)) mercadoByCiudad.set(key, []);
+    mercadoByCiudad.get(key).push(m);
+  });
+  const head = `<thead><tr>
+    <th></th><th>Ciudad / Mercado</th><th>N° mercados</th><th>PDV objetivo</th><th>PDV relevado ≥1 vez</th><th>Pendiente</th><th>Avance</th><th>Estado</th>
+  </tr></thead>`;
+  let body = '';
+  cRows.forEach((c, ci)=>{
+    const gid = tableId + '-c' + ci;
+    const isOpen = state[flagName] || openSet.has(gid);
+    const key = c.r + '|' + c.c;
+    const items = (mercadoByCiudad.get(key) || []).sort((a,b)=>b.pend-a.pend);
+    body += `<tr class="mk-row ${isOpen?'open':''}" data-gid="${gid}">
+      <td><span class="chev">▶</span></td>
+      <td class="mk-name">${c.alerta==='PENDIENTE'?'<span class="mk-alert-dot"></span>':''}${esc(titleCase(c.c))} <span class="mk-count">· ${c.nmk} mercados</span></td>
+      <td class="num">${c.nmk}</td>
+      <td class="num">${c.obj}</td>
+      <td class="num">${c.cum}</td>
+      <td class="num">${c.pend}</td>
+      <td>${meterHTML(c.cum, c.obj, c.pct)}</td>
+      <td>${c.alerta==='PENDIENTE' ? '<span class="alert-badge">⚠ Pendiente</span>' : '<span class="ok-badge">✓ Relevado</span>'}</td>
+    </tr>`;
+    items.forEach(m=>{
+      body += `<tr class="pdv-row ${isOpen?'show':''}" data-parent="${gid}">
+        <td></td>
+        <td class="pdv-name">${esc(titleCase(m.mk))} <span class="code" style="font-size:11px">${esc(titleCase(m.dist))}</span></td>
+        <td></td>
+        <td class="num">${m.obj}</td>
+        <td class="num">${m.cum}</td>
+        <td class="num">${m.pend}</td>
+        <td>${meterHTML(m.cum, m.obj, m.pct)}</td>
+        <td>${m.alerta==='PENDIENTE' ? '<span class="alert-badge">⚠ Pendiente</span>' : '<span class="ok-badge">✓ Relevado</span>'}</td>
+      </tr>`;
+    });
+  });
+  t.innerHTML = head + `<tbody>${body}</tbody>`;
+  t.querySelectorAll('.mk-row').forEach(tr=>{
+    tr.addEventListener('click', ()=>{
+      const gid = tr.dataset.gid;
+      const currentlyOpen = state[flagName] || openSet.has(gid);
+      if(currentlyOpen) openSet.delete(gid); else openSet.add(gid);
+      if(currentlyOpen && state[flagName]){
+        state[flagName] = false;
+        cRows.forEach((c2, ci2)=>{ if(tableId+'-c'+ci2 !== gid) openSet.add(tableId+'-c'+ci2); });
+      }
+      rerenderFn();
+    });
+  });
+  document.getElementById(toggleBtnId).textContent = state[flagName] ? 'Colapsar todo' : 'Expandir todo';
+}
+
+function renderPreciosRollup(){
+  renderCiudadMercado('t-precios-rollup', DATA.preciosCiudad, DATA.preciosMercado, state.openCiudadPrecios, 'allOpenCiudadPrecios', 'btnTogglePreciosRollup', renderPreciosRollup);
+}
+function renderAccionesRollup(){
+  renderCiudadMercado('t-acciones-rollup', DATA.accionesCiudad, DATA.accionesMercado, state.openCiudadAcciones, 'allOpenCiudadAcciones', 'btnToggleAccionesRollup', renderAccionesRollup);
+}
+
+function renderPrecios(){
+  const rowsAll = filteredPreciosProd();
+  const t = document.getElementById('t-precios');
+  if(rowsAll.length===0){ t.innerHTML = `<tbody><tr><td class="empty">Sin resultados para este filtro.</td></tr></tbody>`; return; }
+
+  // group by mercado (+ distribuidora, in case of name collisions)
+  const groups = new Map();
+  for(const r of rowsAll){
+    const key = r.dist + ' | ' + r.mk;
+    if(!groups.has(key)) groups.set(key, { mercado:r.mk, dist:r.dist, region:r.r, ciudad:r.c, items:[] });
+    groups.get(key).items.push(r);
+  }
+  const groupArr = [...groups.values()].map(g=>{
+    const sfO = g.items.reduce((s,r)=>s+r.sfO,0), sfC = g.items.reduce((s,r)=>s+r.sfC,0);
+    const cO = g.items.reduce((s,r)=>s+r.cO,0), cC = g.items.reduce((s,r)=>s+r.cC,0);
+    const nSin = g.items.filter(r=>r.sfE==='SIN RELEVO EN EL MES').length;
+    return {...g, sfO, sfC, sfPend: sfO-sfC, sfPct: sfO? Math.round(sfC/sfO*1000)/10:0,
+             cO, cC, cPend: cO-cC, cPct: cO? Math.round(cC/cO*1000)/10:0, nSin};
+  }).sort((a,b)=> (b.nSin-a.nSin) || (b.sfPend-a.sfPend) || a.mercado.localeCompare(b.mercado,'es'));
+
+  const head = `<thead><tr>
+    <th></th>
+    <th>Mercado / PDV</th>
+    <th>Ciudad</th>
+    <th>N° PDV</th>
+    <th>San Fernando</th>
+    <th>Competencia</th>
+    <th>Estado</th>
+  </tr></thead>`;
+
+  let body = '';
+  groupArr.forEach((g, gi) => {
+    const gid = 'mk'+gi;
+    const isOpen = state.mercadosAllOpen || state.openMercados.has(gid);
+    body += `<tr class="mk-row ${isOpen?'open':''}" data-gid="${gid}">
+      <td><span class="chev">▶</span></td>
+      <td class="mk-name">${g.nSin>0?'<span class=\"mk-alert-dot\"></span>':''}${esc(titleCase(g.mercado))} <span class="mk-count">· ${esc(titleCase(g.dist))} · ${g.items.length} pdv</span></td>
+      <td>${esc(titleCase(g.ciudad))}</td>
+      <td class="num">${g.items.length}</td>
+      <td>${meterHTML(g.sfC, g.sfO, g.sfPct)}</td>
+      <td>${meterHTML(g.cC, g.cO, g.cPct)}</td>
+      <td>${g.nSin>0 ? `<span class="alert-badge">⚠ ${g.nSin} sin relevo</span>` : (g.sfPend>0?'<span class="warn-badge">◐ Pendiente</span>':'<span class="ok-badge">✓ Completo</span>')}</td>
+    </tr>`;
+    g.items.sort((a,b)=>a.pdv.localeCompare(b.pdv,'es')).forEach(r=>{
+      body += `<tr class="pdv-row ${isOpen?'show':''}" data-parent="${gid}">
+        <td></td>
+        <td class="pdv-name">${esc(titleCase(r.pdv))} <span class="code" style="font-size:11px">${esc(r.cl)}</span></td>
+        <td></td>
+        <td></td>
+        <td>${meterHTML(r.sfC, r.sfO, r.sfPct)}</td>
+        <td>${meterHTML(r.cC, r.cO, r.cPct)}</td>
+        <td>${estadoBadge(r.sfE)}</td>
+      </tr>`;
+    });
+  });
+  t.innerHTML = head + `<tbody>${body}</tbody>`;
+
+  t.querySelectorAll('.mk-row').forEach(tr=>{
+    tr.addEventListener('click', ()=>{
+      const gid = tr.dataset.gid;
+      const currentlyOpen = state.mercadosAllOpen || state.openMercados.has(gid);
+      if(currentlyOpen) state.openMercados.delete(gid); else state.openMercados.add(gid);
+      if(currentlyOpen && state.mercadosAllOpen){
+        state.mercadosAllOpen = false;
+        groupArr.forEach((g2, gi2)=>{ if('mk'+gi2 !== gid) state.openMercados.add('mk'+gi2); });
+      }
+      renderPrecios();
+    });
+  });
+  document.getElementById('btnToggleMercados').textContent = state.mercadosAllOpen ? 'Colapsar todo' : 'Expandir todo';
+}
+
+function renderAcciones(){
+  const rows0 = filteredAcciones();
+  const rows = sortRows(rows0, state.sortAcciones[0], state.sortAcciones[1]);
+  const t = document.getElementById('t-acciones');
+  if(rows.length===0){ t.innerHTML = `<tbody><tr><td class="empty">Sin resultados para estos filtros.</td></tr></tbody>`; return; }
+  const head = `<thead><tr>
+    ${headerCell('Mercaderista','n',state.sortAcciones)}
+    ${headerCell('Región','r',state.sortAcciones)}
+    ${headerCell('Ciudad','c',state.sortAcciones)}
+    ${headerCell('Mercado','mk',state.sortAcciones)}
+    ${headerCell('PDV','pdv',state.sortAcciones)}
+    ${headerCell('N° registros (mes)','nreg',state.sortAcciones)}
+    ${headerCell('Estado','pend',state.sortAcciones)}
+  </tr></thead>`;
+  const body = rows.map(r=>`<tr>
+    <td class="name">${esc(titleCase(r.n))}</td>
+    <td>${esc(titleCase(r.r))}</td>
+    <td>${esc(titleCase(r.c))}</td>
+    <td>${esc(titleCase(r.mk))}</td>
+    <td class="name">${esc(titleCase(r.pdv))}</td>
+    <td class="num">${r.nreg}</td>
+    <td>${r.alerta ? '<span class="alert-badge">⚠ Falta relevar</span>' : '<span class="ok-badge">✓ Relevado</span>'}</td>
+  </tr>`).join('');
+  t.innerHTML = head + `<tbody>${body}</tbody>`;
+  t.querySelectorAll('thead th').forEach(th=>th.addEventListener('click', ()=>{
+    const key = th.dataset.key;
+    state.sortAcciones = state.sortAcciones[0]===key ? [key, -state.sortAcciones[1]] : [key,-1];
+    renderAcciones();
+  }));
+}
+
+function renderSos(){
+  const rows0 = filteredSos();
+  const rows = sortRows(rows0, state.sortSos[0], state.sortSos[1]);
+
+  const t = document.getElementById('t-sos');
+  if(rows.length===0){ t.innerHTML = `<tbody><tr><td class="empty">Sin resultados para estos filtros.</td></tr></tbody>`; return; }
+  const head = `<thead><tr>
+    ${headerCell('Supervisor','s',state.sortSos)}
+    ${headerCell('Región','r',state.sortSos)}
+    ${headerCell('Departamento','dep',state.sortSos)}
+    ${headerCell('PDV objetivo','obj',state.sortSos)}
+    ${headerCell('PDV relevado por supervisor','cum',state.sortSos)}
+    ${headerCell('PDV relevado por mercaderista','hm',state.sortSos)}
+    ${headerCell('Avance','pct',state.sortSos)}
+    ${headerCell('Pendientes','pend',state.sortSos)}
+    ${headerCell('Estado','pend',state.sortSos)}
+  </tr></thead>`;
+  const body = rows.map(r=>`<tr>
+    <td class="name">${esc(titleCase(r.s))}</td>
+    <td>${esc(titleCase(r.r))}</td>
+    <td>${esc(titleCase(r.dep))}</td>
+    <td class="num">${r.obj}</td>
+    <td class="num">${r.cum}</td>
+    <td class="num">${r.hm}</td>
+    <td>${meterHTML(r.cum + r.hm, r.obj, r.pct)}</td>
+    <td class="num">${r.pend}</td>
+    <td>${r.alerta ? '<span class="alert-badge">⚠ Falta relevar</span>' : '<span class="ok-badge">✓ Al día</span>'}</td>
+  </tr>`).join('');
+  t.innerHTML = head + `<tbody>${body}</tbody>`;
+  t.querySelectorAll('thead th').forEach(th=>th.addEventListener('click', ()=>{
+    const key = th.dataset.key;
+    state.sortSos = state.sortSos[0]===key ? [key, -state.sortSos[1]] : [key,-1];
+    renderSos();
+  }));
+}
+
+function renderSosDetail(){
+  const rows = sortRows(filteredSosDetail(), state.sortSosDetail[0], state.sortSosDetail[1]);
+  const t = document.getElementById('t-sos-detail');
+  if(rows.length===0){ t.innerHTML = `<tbody><tr><td class="empty">Sin resultados para estos filtros.</td></tr></tbody>`; return; }
+  const head = `<thead><tr>
+    ${headerCell('Supervisor','s',state.sortSosDetail)}
+    ${headerCell('Región','r',state.sortSosDetail)}
+    ${headerCell('Ciudad','c',state.sortSosDetail)}
+    ${headerCell('Mercado','mk',state.sortSosDetail)}
+    ${headerCell('PDV','pdv',state.sortSosDetail)}
+    ${headerCell('Estado','cum',state.sortSosDetail)}
+  </tr></thead>`;
+  const body = rows.map(r=>`<tr>
+    <td class="name">${esc(titleCase(r.s))}</td>
+    <td>${esc(titleCase(r.r))}</td>
+    <td>${esc(titleCase(r.c))}</td>
+    <td>${esc(titleCase(r.mk))}</td>
+    <td class="name">${esc(titleCase(r.pdv))}</td>
+    <td>${r.cum===1 ? '<span class="ok-badge">✓ Relevado</span>' : '<span class="alert-badge">⚠ Falta relevar</span>'}</td>
+  </tr>`).join('');
+  t.innerHTML = head + `<tbody>${body}</tbody>`;
+  t.querySelectorAll('thead th').forEach(th=>th.addEventListener('click', ()=>{
+    const key = th.dataset.key;
+    state.sortSosDetail = state.sortSosDetail[0]===key ? [key, -state.sortSosDetail[1]] : [key,1];
+    renderSosDetail();
+  }));
+}
+
+function renderEval(){
+  const rows = sortRows(filteredEval(), state.sortEval[0], state.sortEval[1]);
+  const t = document.getElementById('t-eval');
+  if(rows.length===0){ t.innerHTML = `<tbody><tr><td class="empty">Sin resultados para estos filtros.</td></tr></tbody>`; return; }
+  const head = `<thead><tr>
+    ${headerCell('DNI','dni',state.sortEval)}
+    ${headerCell('Mercaderista','n',state.sortEval)}
+    ${headerCell('Actividad','a',state.sortEval)}
+    ${headerCell('Región','r',state.sortEval)}
+    ${headerCell('Ciudad','c',state.sortEval)}
+    ${headerCell('N° evaluaciones','ne',state.sortEval)}
+    ${headerCell('Estado','ne',state.sortEval)}
+  </tr></thead>`;
+  const body = rows.map(e=>`<tr>
+    <td class="code">${esc(e.dni)}</td>
+    <td class="name">${esc(titleCase(e.n))}</td>
+    <td>${activityBadge(e.a)}</td>
+    <td>${esc(titleCase(e.r))}</td>
+    <td>${esc(titleCase(e.c))}</td>
+    <td class="num">${e.ne}</td>
+    <td>${e.ne===0 ? '<span class="alert-badge">⚠ Falta evaluar</span>' : `<span class="ok-badge">✓ Evaluado</span>`}</td>
+  </tr>`).join('');
+  t.innerHTML = head + `<tbody>${body}</tbody>`;
+  t.querySelectorAll('thead th').forEach(th=>th.addEventListener('click', ()=>{
+    const key = th.dataset.key;
+    state.sortEval = state.sortEval[0]===key ? [key, -state.sortEval[1]] : [key,1];
+    renderEval();
+  }));
+}
+
+function renderWaText(){
+  const rows = filteredEval();
+  const bySup = new Map();
+  rows.forEach(e=>{
+    const key = e.s || '(sin supervisor)';
+    if(!bySup.has(key)) bySup.set(key, { total:0, pend:0 });
+    const o = bySup.get(key);
+    o.total++;
+    if(e.ne===0) o.pend++;
+  });
+  const sups = [...bySup.entries()].sort((a,b)=>b[1].pend-a[1].pend);
+  const lines = ['EVALUACIÓN DEL MERCADERISTA'];
+  if(sups.length===0){
+    lines.push('', 'Sin resultados para estos filtros.');
+  } else {
+    sups.forEach(([sup,o])=>{
+      lines.push('');
+      lines.push(titleCase(sup));
+      lines.push(o.pend + ' pendiente' + (o.pend===1?'':'s') + ' por relevar de ' + o.total);
+    });
+  }
+  document.getElementById('waText').value = lines.join('\n');
+}
+
+// "Clientes" = PDV únicos (columna PDV/cl), sin duplicar cuando 2 mercaderistas
+// comparten el mismo cliente — misma unidad en Precios, Acciones y SOS.
+function mercadoClienteTiles(rows, doneFn){
+  const mercados = new Set(rows.map(r=>r.mk));
+  const mercadosRelevados = new Set(rows.filter(doneFn).map(r=>r.mk));
+  const clientes = new Set(rows.map(r=>r.cl));
+  const clientesRelevados = new Set(rows.filter(doneFn).map(r=>r.cl));
+  const pct = clientes.size ? Math.round(clientesRelevados.size/clientes.size*1000)/10 : 0;
+  return [
+    {label:'Mercados objetivo', value:mercados.size, sub:'mercados únicos', cls:''},
+    {label:'Mercados relevados', value:mercadosRelevados.size, sub:'con al menos 1 cliente', cls:'good'},
+    {label:'Clientes objetivo', value:clientes.size, sub:'PDV únicos', cls:''},
+    {label:'Clientes relevados', value:clientesRelevados.size, sub:'PDV con relevo', cls:'good'},
+    {label:'% avance', value:pct+'%', sub:clientesRelevados.size+' de '+clientes.size+' clientes', cls: pct>=60?'good':(pct>0?'':'alert')},
+  ];
+}
+function tilesForPrecios(){
+  return mercadoClienteTiles(filteredPreciosProd(), r=>r.sfC>0);
+}
+function tilesForAcciones(){
+  return mercadoClienteTiles(filteredAcciones(), r=>r.cum===1);
+}
+function tilesForSos(){
+  return mercadoClienteTiles(filteredSosDetail(), r=>r.cum===1);
+}
+function tilesForEval(){
+  const ef = filteredEval();
+  const sinEval = ef.filter(e=>e.ne===0).length;
+  return [
+    {label:'Roster evaluación', value:ef.length, sub:'Activos Lima + Provincia', cls:''},
+    {label:'Evaluados', value:ef.length-sinEval, sub:ef.length? Math.round((ef.length-sinEval)/ef.length*1000)/10+'%':'—', cls:'good'},
+    {label:'Sin evaluación', value:sinEval, sub:'alerta de faltantes', cls: sinEval>0?'alert':''},
+  ];
+}
+
+function renderTiles(){
+  const panel = document.querySelector('.tab.active').dataset.panel;
+  let tiles = [];
+  if(panel==='p-precios') tiles = tilesForPrecios();
+  else if(panel==='p-acciones') tiles = tilesForAcciones();
+  else if(panel==='p-sos') tiles = tilesForSos();
+  else if(panel==='p-eval') tiles = tilesForEval();
+  const el = document.getElementById('tiles');
+  el.style.display = tiles.length ? 'grid' : 'none';
+  el.innerHTML = tiles.map(t=>`
+    <div class="tile ${t.cls}">
+      <div class="label">${t.label}</div>
+      <div class="value">${t.value}</div>
+      <div class="sub">${t.sub}</div>
+    </div>`).join('');
+}
+
+function renderMetaTiles(){
+  const rf = filteredResumen();
+  const df = filteredDetalle();
+  const totalPdvRows = df.length;
+  const pdvUnicos = new Set(df.map(d=>d.cl)).size;
+  const conRelevo = df.filter(d=>d.t>0).length;
+  const pctRelevo = totalPdvRows ? Math.round(conRelevo/totalPdvRows*1000)/10 : 0;
+  const criticos = rf.filter(r=>r.res==='CRÍTICO').length;
+  const items = [
+    {label:'Mercaderistas activos', value:rf.length, sub:'Mercaderismo + Senior', cls:''},
+    {label:'PDV programados', value:pdvUnicos, sub:'puntos de venta únicos', cls:''},
+    {label:'% de relevo', value:pctRelevo+'%', sub:conRelevo+' de '+totalPdvRows+' PDV con algún relevo', cls: pctRelevo>=60?'good':(pctRelevo>0?'':'alert')},
+    {label:'Mercaderistas críticos', value:criticos, sub:'desempeño promedio <70%', cls: criticos>0?'alert':'good'},
+  ];
+  document.getElementById('metaTiles').innerHTML = items.map(t=>`
+    <div class="tile ${t.cls}">
+      <div class="label">${t.label}</div>
+      <div class="value">${t.value}</div>
+      <div class="sub">${t.sub}</div>
+    </div>`).join('');
+}
+
+function updateCount(){
+  const active = document.querySelector('.tab.active').dataset.panel;
+  let n = 0;
+  if(active==='p-resumen') n = filteredResumen().length;
+  else if(active==='p-detalle') n = filteredDetalle().length;
+  else if(active==='p-freq') n = filteredFreq().length;
+  else if(active==='p-precios') n = filteredPreciosProd().length;
+  else if(active==='p-acciones') n = filteredAcciones().length;
+  else if(active==='p-sos') n = filteredSosDetail().length;
+  else n = filteredEval().length;
+  document.getElementById('rowCount').textContent = n + ' filas';
+}
+
+function countActiveFilters(){
+  const keys = ['region','zona','ciudad','dist','mercado','mercaderista','estado','search'];
+  if(!state.lockedSupervisor) keys.push('supervisor');
+  return keys.reduce((n,k)=> n + (state[k] ? 1 : 0), 0);
+}
+function updateFilterBadge(){
+  const badge = document.getElementById('fbBadge');
+  if(!badge) return;
+  const n = countActiveFilters();
+  badge.textContent = n;
+  badge.classList.toggle('zero', n===0);
+}
+
+function render(){
+  renderMetaTiles();
+  renderTiles();
+  renderResumenInsights();
+  renderResumen();
+  renderDetalle();
+  renderFreq();
+  renderPreciosRollup();
+  renderPrecios();
+  renderAccionesRollup();
+  renderAcciones();
+  renderSos();
+  renderSosDetail();
+  renderEval();
+  renderWaText();
+  updateCount();
+  updateFilterBadge();
+}
+
+// ---------- carga de datos desde Supabase (respetando las reglas de seguridad) ----------
+function mapResumen(r){
+  return { n:r.nombre, d:r.dni, a:r.actividad, s:r.supervisor, r:r.region, z:r.zona, c:r.ciudad,
+    dist:r.distribuidoras, mk:r.mercados, p:r.pdv_programados,
+    asis:[r.dias_asistidos, r.dias_habiles, r.asistencia_pct],
+    cob:[r.visitas_cubiertas, r.visitas_programadas, r.cobertura_pct],
+    kp:[r.pdv_precios, r.pct_precios], ka:[r.pdv_acciones, r.pct_acciones],
+    kst:[r.pdv_stock, r.pct_stock], ksop:[r.pdv_sop, r.pct_sop], ksos:[r.pdv_sos, r.pct_sos],
+    dsm:r.desempeno_pct, res:r.resultado };
+}
+function mapDetail(d){
+  return { n:d.mercaderista, dni:d.dni, a:d.actividad, s:d.supervisor, r:d.region, c:d.ciudad, z:d.zona,
+    mk:d.mercado, dist:d.distribuidora, cl:d.cod_local, pdv:d.pdv, dp:d.dias_programado,
+    kp:d.veces_precios, ka:d.veces_acciones, kst:d.veces_stock, ksop:d.veces_sop, ksos:d.veces_sos, t:d.total_relevos };
+}
+function mapFreq(r){
+  return { n:r.mercaderista, dni:r.dni, s:r.supervisor, r:r.region, c:r.ciudad, z:r.zona, mk:r.mercado, dist:r.distribuidora,
+    cl:r.cod_local, pdv:r.pdv, sp:r.semanas_programadas,
+    p:[r.precios_obj, r.precios_cum, r.precios_pend, r.precios_pct],
+    st:[r.stock_obj, r.stock_cum, r.stock_pend, r.stock_pct],
+    sop:[r.sop_obj, r.sop_cum, r.sop_pend], ac:[r.acciones_obj, r.acciones_cum, r.acciones_pend],
+    sos:[r.sos_obj, r.sos_cum, r.sos_pend] };
+}
+function mapPreciosProd(r){
+  return { n:r.mercaderista, dni:r.dni, s:r.supervisor, r:r.region, c:r.ciudad, z:r.zona, dist:r.distribuidora, mk:r.mercado,
+    cl:r.cod_local, pdv:r.pdv, rel:r.relevado?1:0,
+    sfO:r.sf_objetivo, sfC:r.sf_cumplido, sfP:r.sf_pendiente, sfPct:r.sf_pct, sfE:r.sf_estado, sfF:r.sf_faltantes,
+    cO:r.comp_objetivo, cC:r.comp_cumplido, cP:r.comp_pendiente, cPct:r.comp_pct, cE:r.comp_estado, cF:r.comp_faltantes };
+}
+function mapAcciones(r){
+  return { n:r.mercaderista, dni:r.dni, s:r.supervisor, r:r.region, c:r.ciudad, z:r.zona, dist:r.distribuidora, mk:r.mercado,
+    cl:r.cod_local, pdv:r.pdv, cum:r.cumplido, pend:r.pendiente, nreg:r.n_registros, alerta:r.alerta };
+}
+function mapSosSup(r){
+  return { s:r.supervisor, r:r.region, dep:r.departamento, obj:r.objetivo, cum:r.cumplido,
+    hm:r.hecho_por_mercaderista, pct:r.pct, pend:r.pendiente, alerta:r.alerta };
+}
+function mapSosDetail(r){
+  return { s:r.supervisor, r:r.region, c:r.ciudad, mk:r.mercado, cl:r.cod_local, pdv:r.pdv, cum:r.cumplido, por:r.hecho_por };
+}
+function mapEval(e){
+  return { dni:e.dni, n:e.nombre, a:e.actividad, s:e.supervisor, r:e.region, c:e.ciudad, z:e.zona,
+    ne:e.n_evaluaciones, m:e.metodo_match };
+}
+function mapRollup(r, level){
+  const out = { r:r.region, c:r.ciudad, z:r.zona, obj:r.objetivo, cum:r.cumplido, pend:r.pendiente, pct:r.pct, alerta:r.alerta };
+  if(level==='mercado'){ out.mk = r.mercado; out.dist = r.distribuidora; } else { out.nmk = r.n_mercados; }
+  return out;
+}
+
+async function fetchTable(table){
+  const { data, error } = await sb.from(table).select('*');
+  if(error){ console.error('Error leyendo', table, error); return []; }
+  return data || [];
+}
+
+async function fetchAllData(){
+  const [resumen, detail, freq, preciosProd, preciosCiudad, preciosMercado,
+         acciones, accionesCiudad, accionesMercado, sosSup, sosDet, evalRows, metaRows] = await Promise.all([
+    fetchTable('resumen'), fetchTable('detalle_pdv'), fetchTable('frecuencia'),
+    fetchTable('precios_prod'), fetchTable('precios_ciudad'), fetchTable('precios_mercado'),
+    fetchTable('acciones'), fetchTable('acciones_ciudad'), fetchTable('acciones_mercado'),
+    fetchTable('sos_supervisores'), fetchTable('sos_detalle'), fetchTable('evaluacion'), fetchTable('meta'),
+  ]);
+  DATA = {
+    resumen: resumen.map(mapResumen), detail: detail.map(mapDetail), freq: freq.map(mapFreq),
+    preciosProd: preciosProd.map(mapPreciosProd),
+    preciosCiudad: preciosCiudad.map(r=>mapRollup(r,'ciudad')), preciosMercado: preciosMercado.map(r=>mapRollup(r,'mercado')),
+    accionesAl: acciones.map(mapAcciones),
+    accionesCiudad: accionesCiudad.map(r=>mapRollup(r,'ciudad')), accionesMercado: accionesMercado.map(r=>mapRollup(r,'mercado')),
+    sosSupervisores: sosSup.map(mapSosSup), sosDetail: sosDet.map(mapSosDetail), eval: evalRows.map(mapEval),
+    meta: metaRows[0] || {},
+  };
+}
+
+// ---------- sesión (login real con Supabase Auth) ----------
+function fmtDate(iso){
+  if(!iso) return null;
+  const d = new Date(iso+'T00:00:00');
+  if(isNaN(d)) return null;
+  return d.toLocaleDateString('es-PE', {day:'2-digit', month:'short', year:'numeric'}).replace(/\./g,'');
+}
+
+function showLogin(msg){
+  document.getElementById('accessGate').hidden = false;
+  document.getElementById('dashboardApp').hidden = true;
+  document.getElementById('loginError').textContent = msg || '';
+}
+
+async function loadProfileAndData(){
+  const { data: userData } = await sb.auth.getUser();
+  const user = userData && userData.user;
+  if(!user){ showLogin(); return; }
+
+  const { data: profile, error: profErr } = await sb.from('profiles').select('*').eq('id', user.id).single();
+  if(profErr || !profile){
+    showLogin('Tu usuario no tiene un perfil configurado. Avisa al administrador.');
+    await sb.auth.signOut();
+    return;
+  }
+  CURRENT_PROFILE = profile;
+
+  document.getElementById('updateStatus').textContent = 'Cargando datos…';
+  await fetchAllData();
+  document.getElementById('updateStatus').textContent = '';
+
+  const isAdmin = profile.role === 'admin';
+  state.lockedSupervisor = !isAdmin;
+  state.supervisor = isAdmin ? '' : profile.supervisor_name;
+  state.region = ''; state.zona = '';
+
+  document.getElementById('sessionWho').textContent = isAdmin
+    ? 'Administrador (todos los equipos)'
+    : titleCase(profile.supervisor_name || profile.email);
+  document.getElementById('fSupervisor').hidden = state.lockedSupervisor;
+  document.getElementById('fRegion').hidden = state.lockedSupervisor;
+  document.getElementById('fZona').hidden = state.lockedSupervisor;
+  document.getElementById('preciosRollupSection').hidden = !isAdmin;
+  document.getElementById('accionesRollupSection').hidden = !isAdmin;
+
+  const meta = DATA.meta;
+  if(meta && meta.mes_label){
+    const cutoffStr = fmtDate(meta.corte) || meta.corte || '';
+    document.getElementById('cutoffLabel').innerHTML = `Periodo <strong>${esc(meta.mes_label)}</strong><br>Corte al <strong>${esc(cutoffStr)}</strong>`;
+  }
+
+  document.getElementById('accessGate').hidden = true;
+  document.getElementById('dashboardApp').hidden = false;
+  refreshDropdowns();
+  render();
+}
+
+document.getElementById('loginForm').addEventListener('submit', async (e)=>{
+  console.log('[login] submit disparado');
+  e.preventDefault();
+  try{
+    const usuario = document.getElementById('loginUser').value.trim();
+    const pass = document.getElementById('loginPass').value;
+    const btn = document.getElementById('btnLogin');
+    document.getElementById('loginError').textContent = '';
+    btn.disabled = true;
+    btn.textContent = 'Entrando…';
+    console.log('[login] llamando signInWithPassword con', usuario);
+    const { error } = await sb.auth.signInWithPassword({ email: usuario, password: pass });
+    console.log('[login] respuesta recibida, error =', error);
+    if(error){
+      btn.disabled = false;
+      btn.textContent = 'Entrar';
+      document.getElementById('loginError').textContent = 'Usuario o contraseña incorrectos.';
+      return;
+    }
+    btn.textContent = 'Cargando datos…';
+    console.log('[login] llamando loadProfileAndData');
+    await loadProfileAndData();
+    console.log('[login] loadProfileAndData terminó');
+    btn.disabled = false;
+    btn.textContent = 'Entrar';
+  }catch(err){
+    console.error('[login] ERROR ATRAPADO:', err);
+    const btn2 = document.getElementById('btnLogin');
+    btn2.disabled = false; btn2.textContent = 'Entrar';
+    document.getElementById('loginError').textContent = 'Error: ' + (err && err.message ? err.message : err);
+  }
+});
+
+document.getElementById('btnChangeUser').addEventListener('click', async ()=>{
+  await sb.auth.signOut();
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPass').value = '';
+  showLogin();
+});
+
+(async function init(){
+  const { data } = await sb.auth.getSession();
+  if(data && data.session){
+    await loadProfileAndData();
+  } else {
+    showLogin();
+  }
+})();
+</script>
