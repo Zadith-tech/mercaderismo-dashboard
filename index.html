@@ -392,6 +392,7 @@ footer strong{ color:var(--text-muted); }
       <span class="fb-chev" id="fbChev">▾</span>
     </button>
     <div class="filterbar-controls" id="filterbarControls">
+      <select id="fMes"></select>
       <select id="fRegion"><option value="">Región (todas)</option></select>
       <select id="fZona"><option value="">Zona (todas)</option></select>
       <select id="fCiudad"><option value="">Ciudad (todas)</option></select>
@@ -416,8 +417,8 @@ footer strong{ color:var(--text-muted); }
     <button class="tab active" data-panel="p-resumen">Resumen por mercaderista</button>
     <button class="tab" data-panel="p-detalle">Detalle por PDV</button>
     <button class="tab" data-panel="p-freq">Cumplimiento por frecuencia</button>
-    <button class="tab" data-panel="p-precios">Precios</button>
-    <button class="tab" data-panel="p-acciones">Acciones</button>
+    <button class="tab" data-panel="p-precios" id="tabPrecios">Precios</button>
+    <button class="tab" data-panel="p-acciones" id="tabAcciones">Acciones</button>
     <button class="tab" data-panel="p-sos">SOS Supervisores</button>
     <button class="tab" data-panel="p-eval">Evaluación</button>
   </div>
@@ -642,6 +643,7 @@ function refreshDropdowns(){
 }
 
 const state = {
+  mes:null,
   region:'', zona:'', ciudad:'', dist:'', mercado:'', supervisor:'', mercaderista:'', estado:'', search:'',
   lockedSupervisor:false,
   sortResumen:['dsm',-1], sortDetalle:['t',-1], sortFreq:['pend_p',-1],
@@ -651,6 +653,19 @@ const state = {
   openCiudadAcciones: new Set(), allOpenCiudadAcciones: false,
 };
 
+document.getElementById('fMes').addEventListener('change', async e=>{
+  state.mes = e.target.value;
+  document.getElementById('updateStatus').textContent = 'Cargando datos…';
+  await fetchAllData(state.mes);
+  document.getElementById('updateStatus').textContent = '';
+  const meta = DATA.meta;
+  if(meta && meta.mes_label){
+    const cutoffStr = fmtDate(meta.corte) || meta.corte || '';
+    document.getElementById('cutoffLabel').innerHTML = `Periodo <strong>${esc(meta.mes_label)}</strong><br>Corte al <strong>${esc(cutoffStr)}</strong>`;
+  }
+  refreshDropdowns();
+  render();
+});
 document.getElementById('fRegion').addEventListener('change', e=>{ state.region=e.target.value; refreshDropdowns(); render(); });
 document.getElementById('fZona').addEventListener('change', e=>{ state.zona=e.target.value; refreshDropdowns(); render(); });
 document.getElementById('fCiudad').addEventListener('change', e=>{ state.ciudad=e.target.value; refreshDropdowns(); render(); });
@@ -1596,19 +1611,36 @@ function mapRollup(r, level){
   return out;
 }
 
-async function fetchTable(table){
-  const { data, error } = await sb.from(table).select('*');
+async function fetchTable(table, mes){
+  const { data, error } = await sb.from(table).select('*').eq('mes', mes);
   if(error){ console.error('Error leyendo', table, error); return []; }
   return data || [];
 }
 
-async function fetchAllData(){
+async function fetchAvailableMonths(){
+  const { data, error } = await sb.from('meta').select('mes, mes_label').order('mes', {ascending:false});
+  if(error || !data){ console.error('Error leyendo meses disponibles', error); return []; }
+  return data;
+}
+
+function populateMesSelect(months, current){
+  const sel = document.getElementById('fMes');
+  sel.innerHTML = '';
+  months.forEach(m=>{
+    const o = document.createElement('option');
+    o.value = m.mes; o.textContent = titleCase(m.mes_label || m.mes);
+    sel.appendChild(o);
+  });
+  sel.value = current;
+}
+
+async function fetchAllData(mes){
   const [resumen, detail, freq, preciosProd, preciosCiudad, preciosMercado,
          acciones, accionesCiudad, accionesMercado, sosSup, sosDet, evalRows, metaRows] = await Promise.all([
-    fetchTable('resumen'), fetchTable('detalle_pdv'), fetchTable('frecuencia'),
-    fetchTable('precios_prod'), fetchTable('precios_ciudad'), fetchTable('precios_mercado'),
-    fetchTable('acciones'), fetchTable('acciones_ciudad'), fetchTable('acciones_mercado'),
-    fetchTable('sos_supervisores'), fetchTable('sos_detalle'), fetchTable('evaluacion'), fetchTable('meta'),
+    fetchTable('resumen', mes), fetchTable('detalle_pdv', mes), fetchTable('frecuencia', mes),
+    fetchTable('precios_prod', mes), fetchTable('precios_ciudad', mes), fetchTable('precios_mercado', mes),
+    fetchTable('acciones', mes), fetchTable('acciones_ciudad', mes), fetchTable('acciones_mercado', mes),
+    fetchTable('sos_supervisores', mes), fetchTable('sos_detalle', mes), fetchTable('evaluacion', mes), fetchTable('meta', mes),
   ]);
   DATA = {
     resumen: resumen.map(mapResumen), detail: detail.map(mapDetail), freq: freq.map(mapFreq),
@@ -1649,7 +1681,10 @@ async function loadProfileAndData(){
   CURRENT_PROFILE = profile;
 
   document.getElementById('updateStatus').textContent = 'Cargando datos…';
-  await fetchAllData();
+  const months = await fetchAvailableMonths();
+  state.mes = months.length ? months[0].mes : null;
+  populateMesSelect(months, state.mes);
+  await fetchAllData(state.mes);
   document.getElementById('updateStatus').textContent = '';
 
   const isAdmin = profile.role === 'admin';
@@ -1666,6 +1701,14 @@ async function loadProfileAndData(){
   document.getElementById('preciosRollupSection').hidden = !isAdmin;
   document.getElementById('accionesRollupSection').hidden = !isAdmin;
   document.getElementById('waPanel').hidden = !isAdmin;
+  document.getElementById('tabPrecios').hidden = !isAdmin;
+  document.getElementById('tabAcciones').hidden = !isAdmin;
+  if(!isAdmin){
+    const activeTab = document.querySelector('.tab.active');
+    if(activeTab && (activeTab.id==='tabPrecios' || activeTab.id==='tabAcciones')){
+      document.querySelector('.tab[data-panel="p-resumen"]').click();
+    }
+  }
 
   const meta = DATA.meta;
   if(meta && meta.mes_label){
