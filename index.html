@@ -102,13 +102,11 @@ h1,h2,h3,h4{ font-family:"Lexend", "IBM Plex Sans", sans-serif; text-wrap:balanc
   border:1px solid var(--border); border-radius:8px; padding:8px 10px; width:100%;
 }
 .sidebar select:focus, .sidebar input:focus{ outline:2px solid var(--accent); outline-offset:1px; }
-.sidebar .clear, .sidebar .apply{
+.sidebar .clear{
   width:100%; text-align:center; border-radius:8px; padding:9px 12px; font:inherit; font-size:13px; font-weight:600; cursor:pointer;
+  background:transparent; border:1px solid var(--border); color:var(--text-muted);
 }
-.sidebar .clear{ background:transparent; border:1px solid var(--border); color:var(--text-muted); }
 .sidebar .clear:hover{ background:var(--surface-2); color:var(--text); }
-.sidebar .apply{ background:var(--accent); border:1px solid var(--accent); color:#fff; }
-.sidebar .apply:hover{ filter:brightness(0.95); }
 .sidebar .count{ font-size:11.5px; color:var(--text-faint); text-align:center; }
 .main-col{ flex:1; min-width:0; }
 
@@ -409,7 +407,6 @@ footer strong{ color:var(--text-muted); }
         </select>
         <input type="search" id="fSearch" placeholder="Buscar mercaderista o DNI…">
         <button class="clear" id="btnClear">↻ Limpiar filtros</button>
-        <button class="apply" id="btnApplyFilters" type="button">🔍 Aplicar filtros</button>
         <div class="count" id="rowCount"></div>
       </div>
     </aside>
@@ -668,20 +665,18 @@ document.getElementById('fMes').addEventListener('change', async e=>{
   refreshDropdowns();
   render();
 });
-// Los filtros (menos Periodo, que trae datos nuevos) se acumulan y solo se
-// aplican al hacer clic en "Aplicar filtros" — la insignia "Filtros (N)" sí se
-// actualiza al instante para que se vea qué quedó seleccionado.
-document.getElementById('fRegion').addEventListener('change', e=>{ state.region=e.target.value; refreshDropdowns(); updateFilterBadge(); });
-document.getElementById('fZona').addEventListener('change', e=>{ state.zona=e.target.value; refreshDropdowns(); updateFilterBadge(); });
-document.getElementById('fCiudad').addEventListener('change', e=>{ state.ciudad=e.target.value; refreshDropdowns(); updateFilterBadge(); });
-document.getElementById('fDist').addEventListener('change', e=>{ state.dist=e.target.value; refreshDropdowns(); updateFilterBadge(); });
-document.getElementById('fMercado').addEventListener('change', e=>{ state.mercado=e.target.value; refreshDropdowns(); updateFilterBadge(); });
-document.getElementById('fSupervisor').addEventListener('change', e=>{ state.supervisor=e.target.value; refreshDropdowns(); updateFilterBadge(); });
-document.getElementById('fMercaderista').addEventListener('change', e=>{ state.mercaderista=e.target.value; refreshDropdowns(); updateFilterBadge(); });
-document.getElementById('fEstado').addEventListener('change', e=>{ state.estado=e.target.value; updateFilterBadge(); });
-document.getElementById('fSearch').addEventListener('input', e=>{ state.search=e.target.value.trim().toLowerCase(); updateFilterBadge(); });
-document.getElementById('fSearch').addEventListener('keydown', e=>{ if(e.key==='Enter'){ render(); } });
-document.getElementById('btnApplyFilters').addEventListener('click', ()=>{ render(); });
+// Los filtros se aplican al instante al cambiarlos. El botón "Aplicar filtros"
+// se deja disponible también (por si alguien prefiere tocarlo), pero no hace
+// falta: cada cambio ya dispara el render solo.
+document.getElementById('fRegion').addEventListener('change', e=>{ state.region=e.target.value; refreshDropdowns(); render(); });
+document.getElementById('fZona').addEventListener('change', e=>{ state.zona=e.target.value; refreshDropdowns(); render(); });
+document.getElementById('fCiudad').addEventListener('change', e=>{ state.ciudad=e.target.value; refreshDropdowns(); render(); });
+document.getElementById('fDist').addEventListener('change', e=>{ state.dist=e.target.value; refreshDropdowns(); render(); });
+document.getElementById('fMercado').addEventListener('change', e=>{ state.mercado=e.target.value; refreshDropdowns(); render(); });
+document.getElementById('fSupervisor').addEventListener('change', e=>{ state.supervisor=e.target.value; refreshDropdowns(); render(); });
+document.getElementById('fMercaderista').addEventListener('change', e=>{ state.mercaderista=e.target.value; refreshDropdowns(); render(); });
+document.getElementById('fEstado').addEventListener('change', e=>{ state.estado=e.target.value; render(); });
+document.getElementById('fSearch').addEventListener('input', e=>{ state.search=e.target.value.trim().toLowerCase(); render(); });
 document.getElementById('btnClear').addEventListener('click', ()=>{
   state.region=''; state.zona=''; state.ciudad=''; state.dist=''; state.mercado='';
   state.mercaderista=''; state.estado=''; state.search='';
