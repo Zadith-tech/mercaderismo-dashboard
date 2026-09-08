@@ -87,27 +87,30 @@ h1,h2,h3,h4{ font-family:"Lexend", "IBM Plex Sans", sans-serif; text-wrap:balanc
 .tile.alert .value{ color:var(--critical); }
 .tile.good .value{ color:var(--good); }
 
-/* ---------- Filter bar ---------- */
-.filterbar{
-  position:sticky; top:0; z-index:20; background:var(--bg);
-  padding:10px 0 12px; margin-bottom:14px; border-bottom:1px solid var(--border);
+/* ---------- App layout (sidebar de filtros + contenido) ---------- */
+.app-layout{ display:flex; gap:22px; align-items:flex-start; }
+.sidebar{
+  width:250px; flex:none; background:var(--surface); border:1px solid var(--border); border-radius:14px;
+  padding:16px; box-shadow:var(--shadow); position:sticky; top:16px; max-height:calc(100dvh - 32px); overflow-y:auto;
 }
 .filterbar-toggle{ display:none; }
-.filterbar-controls{
-  display:flex; flex-wrap:wrap; gap:8px; align-items:center;
+.sidebar-head{ font-size:13px; font-weight:700; color:var(--text); text-transform:uppercase; letter-spacing:.03em; margin-bottom:12px; }
+.sidebar-fields{ display:flex; flex-direction:column; gap:10px; }
+.side-field{ display:flex; flex-direction:column; gap:4px; font-size:11px; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:.02em; }
+.sidebar select, .sidebar input[type="search"]{
+  font:inherit; font-size:13px; background:var(--surface-2); color:var(--text);
+  border:1px solid var(--border); border-radius:8px; padding:8px 10px; width:100%;
 }
-.filterbar select, .filterbar input[type="search"]{
-  font:inherit; font-size:13px; background:var(--surface); color:var(--text);
-  border:1px solid var(--border); border-radius:8px; padding:7px 10px; min-width:126px;
+.sidebar select:focus, .sidebar input:focus{ outline:2px solid var(--accent); outline-offset:1px; }
+.sidebar .clear, .sidebar .apply{
+  width:100%; text-align:center; border-radius:8px; padding:9px 12px; font:inherit; font-size:13px; font-weight:600; cursor:pointer;
 }
-.filterbar input[type="search"]{ min-width:190px; flex:1 1 190px; }
-.filterbar select:focus, .filterbar input:focus{ outline:2px solid var(--accent); outline-offset:1px; }
-.filterbar .clear{
-  background:transparent; border:1px solid var(--border); color:var(--text-muted);
-  border-radius:8px; padding:7px 12px; font:inherit; font-size:13px; cursor:pointer;
-}
-.filterbar .clear:hover{ background:var(--surface-2); color:var(--text); }
-.filterbar .count{ font-size:12px; color:var(--text-faint); margin-left:auto; white-space:nowrap; }
+.sidebar .clear{ background:transparent; border:1px solid var(--border); color:var(--text-muted); }
+.sidebar .clear:hover{ background:var(--surface-2); color:var(--text); }
+.sidebar .apply{ background:var(--accent); border:1px solid var(--accent); color:#fff; }
+.sidebar .apply:hover{ filter:brightness(0.95); }
+.sidebar .count{ font-size:11.5px; color:var(--text-faint); text-align:center; }
+.main-col{ flex:1; min-width:0; }
 
 /* ---------- Tabs ---------- */
 .tabs{ display:flex; gap:4px; margin-bottom:14px; border-bottom:1px solid var(--border); flex-wrap:wrap; }
@@ -280,23 +283,22 @@ footer strong{ color:var(--text-muted); }
   .rank-cols{ grid-template-columns:1fr; gap:14px; }
 
   /* filtros: colapsados detrás de un botón "Filtros (N)" para no tapar el contenido */
-  .filterbar{ padding:8px 0 10px; }
+  .app-layout{ flex-direction:column; gap:14px; }
+  .sidebar{ width:100%; position:static; max-height:none; padding:10px 14px; }
   .filterbar-toggle{
     display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%;
     font:inherit; font-size:13.5px; font-weight:600; color:var(--text);
-    background:var(--surface); border:1px solid var(--border); border-radius:10px;
-    padding:11px 14px; cursor:pointer;
+    background:transparent; border:none; padding:6px 0; cursor:pointer;
   }
+  .sidebar-head{ display:none; }
   .fb-badge{ display:inline-flex; align-items:center; justify-content:center; min-width:19px; height:19px; padding:0 5px;
     background:var(--accent); color:#fff; border-radius:99px; font-size:11px; font-weight:700; margin-left:6px; }
   .fb-badge.zero{ background:var(--surface-2); color:var(--text-faint); }
   .fb-chev{ transition:transform .15s ease; color:var(--text-faint); font-size:11px; }
   .fb-chev.open{ transform:rotate(180deg); }
-  .filterbar-controls{ display:none; flex-direction:column; align-items:stretch; margin-top:8px; }
-  .filterbar-controls.open{ display:flex; }
-  .filterbar select, .filterbar input[type="search"]{ min-width:0; flex:none; width:100%; font-size:15px; padding:11px 12px; }
-  .filterbar .clear{ width:100%; padding:11px 12px; }
-  .filterbar .count{ margin-left:0; text-align:left; }
+  .sidebar-fields{ display:none; margin-top:8px; }
+  .sidebar-fields.open{ display:flex; }
+  .sidebar select, .sidebar input[type="search"]{ font-size:15px; padding:11px 12px; }
 
   /* pestañas: tira horizontal deslizable en vez de envolver en varias filas */
   .tabs{ flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
@@ -384,32 +386,36 @@ footer strong{ color:var(--text-muted); }
     </div>
   </div>
 
-  <div class="tiles meta" id="metaTiles"></div>
+  <div class="app-layout">
+    <aside class="sidebar" id="filterbarGeneral">
+      <button class="filterbar-toggle" id="btnFilterToggle" type="button" aria-expanded="false">
+        <span>Filtros <span class="fb-badge zero" id="fbBadge">0</span></span>
+        <span class="fb-chev" id="fbChev">▾</span>
+      </button>
+      <div class="sidebar-head">▽ Filtros</div>
+      <div class="sidebar-fields" id="filterbarControls">
+        <label class="side-field"><span>Periodo</span><select id="fMes"></select></label>
+        <select id="fRegion"><option value="">Región (todas)</option></select>
+        <select id="fZona"><option value="">Zona (todas)</option></select>
+        <select id="fCiudad"><option value="">Ciudad (todas)</option></select>
+        <select id="fDist"><option value="">Distribuidora (todas)</option></select>
+        <select id="fMercado"><option value="">Mercado (todos)</option></select>
+        <select id="fSupervisor"><option value="">Supervisor (todos)</option></select>
+        <select id="fMercaderista"><option value="">Mercaderista (todos)</option></select>
+        <select id="fEstado">
+          <option value="">Relevo (todos)</option>
+          <option value="relevado">Relevado</option>
+          <option value="pendiente">Pendiente de relevo</option>
+        </select>
+        <input type="search" id="fSearch" placeholder="Buscar mercaderista o DNI…">
+        <button class="clear" id="btnClear">↻ Limpiar filtros</button>
+        <button class="apply" id="btnApplyFilters" type="button">🔍 Aplicar filtros</button>
+        <div class="count" id="rowCount"></div>
+      </div>
+    </aside>
 
-  <div class="filterbar" id="filterbarGeneral">
-    <button class="filterbar-toggle" id="btnFilterToggle" type="button" aria-expanded="false">
-      <span>Filtros <span class="fb-badge zero" id="fbBadge">0</span></span>
-      <span class="fb-chev" id="fbChev">▾</span>
-    </button>
-    <div class="filterbar-controls" id="filterbarControls">
-      <select id="fMes"></select>
-      <select id="fRegion"><option value="">Región (todas)</option></select>
-      <select id="fZona"><option value="">Zona (todas)</option></select>
-      <select id="fCiudad"><option value="">Ciudad (todas)</option></select>
-      <select id="fDist"><option value="">Distribuidora (todas)</option></select>
-      <select id="fMercado"><option value="">Mercado (todos)</option></select>
-      <select id="fSupervisor"><option value="">Supervisor (todos)</option></select>
-      <select id="fMercaderista"><option value="">Mercaderista (todos)</option></select>
-      <select id="fEstado">
-        <option value="">Relevo (todos)</option>
-        <option value="relevado">Relevado</option>
-        <option value="pendiente">Pendiente de relevo</option>
-      </select>
-      <input type="search" id="fSearch" placeholder="Buscar mercaderista o DNI…">
-      <button class="clear" id="btnClear">Limpiar filtros</button>
-      <span class="count" id="rowCount"></span>
-    </div>
-  </div>
+    <div class="main-col">
+  <div class="tiles meta" id="metaTiles"></div>
 
   <div class="tiles" id="tiles"></div>
 
@@ -434,7 +440,6 @@ footer strong{ color:var(--text-muted); }
   </div>
 
   <div class="panel" id="p-freq">
-    <p class="note">SOP y SOS: objetivo <strong>1 vez al mes</strong> por PDV. Precios y Stock: objetivo <strong>1 vez por cada semana</strong> programada (semana lun–dom). Acciones no tiene una periodicidad normada por la operación; se usa 1 vez al mes como piso de referencia mínimo según el patrón observado en los datos. El SOS se cruza por cliente (PDV): si lo relevó el supervisor o el mercaderista, cuenta — ver también "SOS Supervisores" para el cumplimiento específico del supervisor.</p>
     <div class="tablewrap"><table id="t-freq"></table></div>
   </div>
 
@@ -443,7 +448,6 @@ footer strong{ color:var(--text-muted); }
     <div class="subhead">
       <div>
         <h3>Resumen por ciudad y mercado</h3>
-        <p>El objetivo es que cada punto de venta (PDV) tenga al menos un relevo de precios en el mes. Agrupado por Ciudad — haz clic para desplegar sus mercados. (Solo administrador.)</p>
       </div>
       <button class="toggle-all" id="btnTogglePreciosRollup">Expandir todo</button>
     </div>
@@ -453,7 +457,6 @@ footer strong{ color:var(--text-muted); }
     <div class="subhead" style="margin-top:28px">
       <div>
         <h3>Detalle por producto (San Fernando vs. Competencia)</h3>
-        <p>Por PDV: catálogo detectado de productos San Fernando y de la competencia, y cuántos tienen precio de venta relevado en el mes. Cada mercado agrupa sus PDV — haz clic para desplegarlos.</p>
       </div>
       <button class="toggle-all" id="btnToggleMercados">Expandir todo</button>
     </div>
@@ -465,7 +468,6 @@ footer strong{ color:var(--text-muted); }
     <div class="subhead">
       <div>
         <h3>Resumen por ciudad y mercado</h3>
-        <p>El objetivo es que cada punto de venta (PDV) tenga al menos un relevo de Acciones de la competencia en el mes. Agrupado por Ciudad — haz clic para desplegar sus mercados. (Solo administrador.)</p>
       </div>
       <button class="toggle-all" id="btnToggleAccionesRollup">Expandir todo</button>
     </div>
@@ -475,7 +477,6 @@ footer strong{ color:var(--text-muted); }
     <div class="subhead" style="margin-top:28px">
       <div>
         <h3>Detalle por PDV</h3>
-        <p>Estado de Acciones por cada punto de venta programado en agosto.</p>
       </div>
     </div>
     <div class="tablewrap"><table id="t-acciones"></table></div>
@@ -485,7 +486,6 @@ footer strong{ color:var(--text-muted); }
     <div class="subhead">
       <div>
         <h3>SOS — cobertura por supervisor</h3>
-        <p>SOS (Share of Shelf): objetivo = clientes (PDV) únicos bajo cada supervisor, incluye Mercaderismo y Mercaderismo Senior, sin duplicar cuando 2 mercaderistas comparten el mismo cliente. El avance suma lo relevado por el supervisor Y lo relevado por un mercaderista en ese mismo PDV (no se duplican: cada PDV cuenta una sola vez, según quien lo haya hecho). El SOS también se reconoce en el ranking del mercaderista (pestaña Resumen), donde cuenta sin importar quién lo relevó.</p>
       </div>
     </div>
     <div class="tablewrap"><table id="t-sos"></table></div>
@@ -493,7 +493,6 @@ footer strong{ color:var(--text-muted); }
     <div class="subhead">
       <div>
         <h3>SOS — detalle por PDV</h3>
-        <p>Cada PDV programado (actividad Mercaderismo) con su estado de SOS: relevado por un supervisor o pendiente.</p>
       </div>
     </div>
     <div class="tablewrap"><table id="t-sos-detail"></table></div>
@@ -512,6 +511,9 @@ footer strong{ color:var(--text-muted); }
       </div>
     </div>
     <div class="tablewrap"><table id="t-eval"></table></div>
+  </div>
+
+    </div>
   </div>
   </div>
 </div>
@@ -666,15 +668,20 @@ document.getElementById('fMes').addEventListener('change', async e=>{
   refreshDropdowns();
   render();
 });
-document.getElementById('fRegion').addEventListener('change', e=>{ state.region=e.target.value; refreshDropdowns(); render(); });
-document.getElementById('fZona').addEventListener('change', e=>{ state.zona=e.target.value; refreshDropdowns(); render(); });
-document.getElementById('fCiudad').addEventListener('change', e=>{ state.ciudad=e.target.value; refreshDropdowns(); render(); });
-document.getElementById('fDist').addEventListener('change', e=>{ state.dist=e.target.value; refreshDropdowns(); render(); });
-document.getElementById('fMercado').addEventListener('change', e=>{ state.mercado=e.target.value; refreshDropdowns(); render(); });
-document.getElementById('fSupervisor').addEventListener('change', e=>{ state.supervisor=e.target.value; refreshDropdowns(); render(); });
-document.getElementById('fMercaderista').addEventListener('change', e=>{ state.mercaderista=e.target.value; refreshDropdowns(); render(); });
-document.getElementById('fEstado').addEventListener('change', e=>{ state.estado=e.target.value; render(); });
-document.getElementById('fSearch').addEventListener('input', e=>{ state.search=e.target.value.trim().toLowerCase(); render(); });
+// Los filtros (menos Periodo, que trae datos nuevos) se acumulan y solo se
+// aplican al hacer clic en "Aplicar filtros" — la insignia "Filtros (N)" sí se
+// actualiza al instante para que se vea qué quedó seleccionado.
+document.getElementById('fRegion').addEventListener('change', e=>{ state.region=e.target.value; refreshDropdowns(); updateFilterBadge(); });
+document.getElementById('fZona').addEventListener('change', e=>{ state.zona=e.target.value; refreshDropdowns(); updateFilterBadge(); });
+document.getElementById('fCiudad').addEventListener('change', e=>{ state.ciudad=e.target.value; refreshDropdowns(); updateFilterBadge(); });
+document.getElementById('fDist').addEventListener('change', e=>{ state.dist=e.target.value; refreshDropdowns(); updateFilterBadge(); });
+document.getElementById('fMercado').addEventListener('change', e=>{ state.mercado=e.target.value; refreshDropdowns(); updateFilterBadge(); });
+document.getElementById('fSupervisor').addEventListener('change', e=>{ state.supervisor=e.target.value; refreshDropdowns(); updateFilterBadge(); });
+document.getElementById('fMercaderista').addEventListener('change', e=>{ state.mercaderista=e.target.value; refreshDropdowns(); updateFilterBadge(); });
+document.getElementById('fEstado').addEventListener('change', e=>{ state.estado=e.target.value; updateFilterBadge(); });
+document.getElementById('fSearch').addEventListener('input', e=>{ state.search=e.target.value.trim().toLowerCase(); updateFilterBadge(); });
+document.getElementById('fSearch').addEventListener('keydown', e=>{ if(e.key==='Enter'){ render(); } });
+document.getElementById('btnApplyFilters').addEventListener('click', ()=>{ render(); });
 document.getElementById('btnClear').addEventListener('click', ()=>{
   state.region=''; state.zona=''; state.ciudad=''; state.dist=''; state.mercado='';
   state.mercaderista=''; state.estado=''; state.search='';
@@ -978,7 +985,6 @@ function renderResumen(){
     ${headerCell('Actividad','a',state.sortResumen)}
     ${headerCell('Región','r',state.sortResumen)}
     ${headerCell('Zona','z',state.sortResumen)}
-    ${headerCell('Supervisor','s',state.sortResumen)}
     ${headerCell('Ciudad','c',state.sortResumen)}
     ${headerCell('PDV prog.','p',state.sortResumen)}
     ${headerCell('Asistencia','asis',state.sortResumen)}
@@ -997,7 +1003,6 @@ function renderResumen(){
     <td>${activityBadge(r.a)}</td>
     <td>${esc(titleCase(r.r))}</td>
     <td>${esc(titleCase(r.z))}</td>
-    <td>${esc(titleCase(r.s))}</td>
     <td>${esc(titleCase(r.c))}</td>
     <td class="num">${r.p}</td>
     <td>${meterHTML(r.asis[0], r.asis[1], r.asis[2])}</td>
