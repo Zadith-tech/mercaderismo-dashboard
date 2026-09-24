@@ -216,6 +216,14 @@ thead th{
 thead th:hover{ color:var(--text); }
 thead th .arrow{ font-size:9px; opacity:.5; margin-left:2px; }
 tbody td{ padding:5px 8px; border-bottom:1px solid var(--border); font-size:12px; vertical-align:middle; white-space:nowrap; }
+table.tight thead th{ padding:4px 5px; font-size:9px; }
+table.tight tbody td{ padding:3px 5px; font-size:10.5px; }
+table.tight .meter{ min-width:44px; }
+table.tight .meter .track{ width:22px; }
+table.tight .meter .pct{ width:28px; font-size:10px; }
+table.tight .alert-badge, table.tight .ok-badge{ padding:1px 6px; font-size:9.5px; white-space:nowrap; }
+table.tight .chip-freq{ padding:1px 5px; font-size:9.5px; }
+table.tight td.name{ max-width:120px; white-space:normal; line-height:1.25; }
 tbody td.wrap-cell{ white-space:normal; max-width:280px; }
 tbody tr:last-child td{ border-bottom:none; }
 tbody tr:hover{ background:var(--surface-2); }
@@ -437,7 +445,7 @@ footer strong{ color:var(--text-muted); }
   </div>
 
   <div class="panel" id="p-freq">
-    <div class="tablewrap"><table id="t-freq"></table></div>
+    <div class="tablewrap"><table id="t-freq" class="tight"></table></div>
   </div>
 
   <div class="panel" id="p-precios">
@@ -485,14 +493,14 @@ footer strong{ color:var(--text-muted); }
         <h3>SOS — cobertura por supervisor</h3>
       </div>
     </div>
-    <div class="tablewrap"><table id="t-sos"></table></div>
+    <div class="tablewrap"><table id="t-sos" class="tight"></table></div>
 
     <div class="subhead">
       <div>
         <h3>SOS — detalle por PDV</h3>
       </div>
     </div>
-    <div class="tablewrap"><table id="t-sos-detail"></table></div>
+    <div class="tablewrap"><table id="t-sos-detail" class="tight"></table></div>
   </div>
 
   <div class="panel" id="p-eval">
@@ -1117,12 +1125,12 @@ function renderFreq(){
     ${headerCell('Ciudad','c',state.sortFreq)}
     ${headerCell('Mercado','mk',state.sortFreq)}
     ${headerCell('PDV','pdv',state.sortFreq)}
-    ${headerCell('Semanas prog.','sp',state.sortFreq)}
-    ${headerCell('Precios (semanal)','p',state.sortFreq)}
-    ${headerCell('Stock (semanal)','st',state.sortFreq)}
-    ${headerCell('SOP (mensual)','sop',state.sortFreq)}
-    ${headerCell('Acciones (ref. mensual)','ac',state.sortFreq)}
-    ${headerCell('SOS (mensual, por cliente)','sos',state.sortFreq)}
+    ${headerCell('Sem. prog.','sp',state.sortFreq)}
+    ${headerCell('Precios','p',state.sortFreq)}
+    ${headerCell('Stock','st',state.sortFreq)}
+    ${headerCell('SOP','sop',state.sortFreq)}
+    ${headerCell('Acciones','ac',state.sortFreq)}
+    ${headerCell('SOS','sos',state.sortFreq)}
   </tr></thead>`;
   const body = rows.map(r=>`<tr>
     <td class="name">${esc(titleCase(r.n))}</td>
@@ -1331,12 +1339,12 @@ function renderSos(){
   const head = `<thead><tr>
     ${headerCell('Supervisor','s',state.sortSos)}
     ${isAdmin ? headerCell('Región','r',state.sortSos) : ''}
-    ${headerCell('Departamento','dep',state.sortSos)}
-    ${headerCell('PDV objetivo','obj',state.sortSos)}
-    ${headerCell('PDV relevado por supervisor','cum',state.sortSos)}
-    ${headerCell('PDV relevado por mercaderista','hm',state.sortSos)}
+    ${headerCell('Depto.','dep',state.sortSos)}
+    ${headerCell('Objetivo','obj',state.sortSos)}
+    ${headerCell('Rel. Superv.','cum',state.sortSos)}
+    ${headerCell('Rel. Merc.','hm',state.sortSos)}
     ${headerCell('Avance','pct',state.sortSos)}
-    ${headerCell('Pendientes','pend',state.sortSos)}
+    ${headerCell('Pend.','pend',state.sortSos)}
     ${headerCell('Estado','pend',state.sortSos)}
   </tr></thead>`;
   const body = rows.map(r=>`<tr>
